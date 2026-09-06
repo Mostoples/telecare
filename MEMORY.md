@@ -20,7 +20,7 @@ berkas ini khusus soal *progres* dan *alasan di balik keputusan*.
 | **Hosting** | Firebase Hosting, proyek `telecare-id` |
 | **Situs penelitian** | https://telecare-id.web.app |
 | **Aplikasi** | https://telecare-id.web.app/app/ |
-| **Ukuran** | ± 11.500 baris (HTML/CSS/JS/Python) |
+| **Ukuran** | ± 13.500 baris (HTML/CSS/JS/Python) |
 | **Versi kontrol** | ✅ Git aktif, branch `main` |
 
 ### Tautan demo cepat
@@ -313,23 +313,38 @@ Urut dari yang paling perlu diselesaikan.
 
 ---
 
-## 8. Rencana berikutnya (usulan)
+## 8. Rencana berikutnya
 
-Belum dikerjakan, tinggal pilih:
+### Sudah selesai
 
 - [x] `git init` + commit awal, lalu commit per perubahan
 - [x] Perketat aturan RTDB + aktifkan Firebase Authentication penuh
-- [ ] Peran tepercaya di server (custom claims) agar aturan bisa membedakan dokter
 - [x] Ganti angka Urgensi dengan data bersumber + sitasi
-- [x] Dukungan TURN + diagnostik konektivitas (server & kredensialnya masih perlu disediakan)
 - [x] PWA: manifest + service worker agar bisa dipasang dan jalan luring
+- [x] Dukungan TURN + diagnostik konektivitas ICE
 - [x] Baca karakteristik GATT nyata dari perangkat BLE (Heart Rate `0x180D` + 4 service lain)
-- [ ] Uji pembacaan GATT dengan wearable BLE sungguhan
-
 - [x] Halaman detail pasien untuk dokter: riwayat konsultasi + catatan klinis tersimpan
 - [x] Notifikasi eskalasi lokal (ambang di perangkat + notifikasi sistem)
-- [ ] Push FCM sungguhan: perlu VAPID key dari Console + pengirim di sisi server
-- [ ] Uji otomatis sapuan rute agar regresi ketahuan lebih awal
+
+### Menunggu prasyarat di luar kode
+
+Kodenya sudah siap; yang kurang tidak dapat disediakan dari sisi kode.
+
+- [ ] **Server TURN** — perlu VPS (coturn) atau layanan berbayar. Sampai kredensial diisi di
+  [app/js/rtc-config.js](app/js/rtc-config.js), panggilan di balik NAT ketat tetap gagal.
+- [ ] **Wearable BLE fisik** — parser GATT terverifikasi terhadap vektor byte spesifikasi, tetapi
+  jalur `connect()`/notifikasi belum pernah menyentuh perangkat sungguhan.
+- [ ] **Push FCM** — perlu VAPID key dari Firebase Console (tidak ada API publik untuk
+  membuatnya) **dan** pengirim di sisi server, sebab klien hanya dapat menerima push.
+  Contoh Cloud Functions ada di README.
+
+### Belum dikerjakan
+
+- [ ] Peran tepercaya di server (custom claims) agar aturan database bisa membedakan dokter
+      sungguhan dari pengguna biasa — lihat §7 butir 9
+- [ ] Penyimpanan catatan klinis bersama antar-dokter (kini hanya `localStorage` per perangkat)
+- [ ] Uji otomatis yang dijalankan berulang. Selama ini verifikasi memakai halaman uji sekali
+      pakai yang dibuat lalu dihapus; hasilnya tercatat di §6 tetapi tidak dapat dijalankan ulang.
 
 ---
 
