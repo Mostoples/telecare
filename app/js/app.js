@@ -352,8 +352,30 @@
    */
   function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
+
+    // Apakah halaman ini sudah dikendalikan service worker sebelumnya?
+    // Membedakan "pemasangan pertama" dari "pembaruan" — hanya pembaruan yang
+    // perlu memuat ulang, dan itu harus dibedakan supaya kunjungan pertama
+    // tidak memuat ulang tanpa alasan.
+    const adaPengendaliAwal = !!navigator.serviceWorker.controller;
+    let sudahMuatUlang = false;
+
+    // Ketika service worker baru mengambil alih, kode di halaman ini sudah
+    // versi lama. Memuat ulang sekali membuat pembaruan langsung berlaku,
+    // tanpa pengguna perlu menekan muat-ulang dua kali.
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!adaPengendaliAwal || sudahMuatUlang) return;
+      sudahMuatUlang = true;
+      location.reload();
+    });
+
     const daftar = () => {
       navigator.serviceWorker.register('sw.js', { scope: './' })
+        .then((reg) => {
+          // Paksa pemeriksaan versi baru pada setiap pemuatan; tanpa ini
+          // peramban dapat menunda pemeriksaan hingga beberapa jam.
+          reg.update().catch(() => {});
+        })
         .catch((e) => console.warn('[TeleCare] service worker gagal didaftarkan:', e.message));
     };
     if (document.readyState === 'complete') daftar();

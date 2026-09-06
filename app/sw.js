@@ -15,7 +15,7 @@
    ============================================================ */
 'use strict';
 
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = `telecare-app-${VERSION}`;
 
 // Kerangka aplikasi. Urutan skrip mengikuti app/index.html.
@@ -72,6 +72,10 @@ const CACHE_LINTAS_ASAL = [
 
 const cocok = (host, daftar) =>
   daftar.some((h) => host === h || host.endsWith('.' + h));
+
+// Berkas yang isinya berubah tanpa namanya berubah. Semua ini harus diambil
+// dari jaringan lebih dulu, kalau tidak pembaruan tidak pernah sampai.
+const KODE_SENDIRI = /\.(?:js|css|webmanifest|html)$/i;
 
 /* ---------------- pemasangan ---------------- */
 self.addEventListener('install', (event) => {
@@ -138,8 +142,22 @@ self.addEventListener('fetch', (event) => {
 
   if (!asalSendiri && !cocok(url.hostname, CACHE_LINTAS_ASAL)) return;
 
-  // Aset statis: sajikan dari cache lalu perbarui di belakang
-  // (stale-while-revalidate), jadi cepat saat dibuka dan tetap ikut pembaruan.
+  // Kode aplikasi sendiri: JARINGAN LEBIH DULU, cache hanya cadangan luring.
+  //
+  // Sebelumnya bagian ini memakai stale-while-revalidate seperti aset lain,
+  // dan itu bug yang menggigit setiap deploy: index.html selalu diambil dari
+  // jaringan, jadi HTML baru meminta berkas skrip baru — tetapi berkas yang
+  // NAMANYA tidak berubah, seperti js/app.js, tetap disajikan dari cache versi
+  // sebelumnya. Akibatnya modul baru ikut termuat namun tidak pernah dikaitkan,
+  // dan pengguna harus memuat ulang dua kali. Cache-first hanya aman bila nama
+  // berkas memuat sidik isinya, dan proyek ini sengaja tanpa langkah build.
+  if (asalSendiri && KODE_SENDIRI.test(url.pathname)) {
+    event.respondWith(jaringanDulu(req));
+    return;
+  }
+
+  // Aset statis lain (gambar, ikon, font): sajikan dari cache lalu perbarui di
+  // belakang. Aman karena isinya berubah bersamaan dengan namanya.
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const tersimpan = await cache.match(req);
@@ -157,6 +175,24 @@ self.addEventListener('fetch', (event) => {
     return res || new Response('', { status: 504, statusText: 'Luring' });
   })());
 });
+
+/**
+ * Jaringan lebih dulu, cache sebagai cadangan. Dipakai untuk kode aplikasi
+ * supaya versi yang dijalankan selalu versi yang ter-deploy.
+ */
+async function jaringanDulu(req) {
+  try {
+    const res = await fetch(req);
+    if (res && res.ok) simpan(req, res.clone());
+    return res;
+  } catch (e) {
+    const cache = await caches.open(CACHE);
+    const tersimpan = await cache.match(req);
+    if (tersimpan) return tersimpan;
+    return new Response('Luring dan berkas ini belum tersimpan.',
+      { status: 504, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+  }
+}
 
 async function simpan(req, res) {
   try {
