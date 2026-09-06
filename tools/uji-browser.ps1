@@ -55,19 +55,40 @@ function New-ProfilSementara {
   return $p
 }
 
-<# Memuat halaman lalu mengembalikan DOM-nya. Proses keluar sendiri. #>
+<#
+  Memuat halaman lalu mengembalikan DOM-nya.
+
+  Memakai batas waktu dinding yang keras, bukan hanya --virtual-time-budget.
+  Alasannya nyata: halaman dengan timer yang terus berjalan (denyut vital,
+  animasi EKG, denyut papan jaga) membuat instance headless kadang tidak
+  pernah keluar sendiri, dan pemanggilan berulang menumpuk sampai puluhan
+  proses. Di sini keluarannya dialihkan ke berkas, prosesnya ditunggu dengan
+  batas waktu, lalu dihentikan lewat PID-nya sendiri apa pun yang terjadi.
+#>
 function Ambil-Dom {
   param(
     [Parameter(Mandatory)][string]$Url,
-    [int]$DurasiMs = 12000,
+    [int]$DurasiMs = 9000,
     [string]$Label = 'dom',
-    [string[]]$FlagTambahan = @()
+    [string[]]$FlagTambahan = @(),
+    [int]$BatasDetik = 0
   )
+  if ($BatasDetik -le 0) { $BatasDetik = [int]($DurasiMs / 1000) + 12 }
+
   $prof = New-ProfilSementara -Label $Label
+  $keluaran = Join-Path $env:TEMP ("tc-dom-" + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.html')
   try {
     $flag = (Get-FlagDasar $prof) + @("--virtual-time-budget=$DurasiMs", '--dump-dom') + $FlagTambahan
-    return (& $script:PeramabanUji @flag $Url 2>$null | Out-String)
+    $p = Start-Process -FilePath $script:PeramabanUji -ArgumentList ($flag + @($Url)) `
+                       -RedirectStandardOutput $keluaran -RedirectStandardError 'NUL' -PassThru
+    if (-not $p.WaitForExit($BatasDetik * 1000)) {
+      taskkill /PID $p.Id /T /F 2>$null | Out-Null
+      Start-Sleep -Milliseconds 500
+    }
+    if (Test-Path $keluaran) { return (Get-Content $keluaran -Raw -ErrorAction SilentlyContinue) }
+    return ''
   } finally {
+    Remove-Item $keluaran -Force -ErrorAction SilentlyContinue
     Remove-Item $prof -Recurse -Force -ErrorAction SilentlyContinue
   }
 }

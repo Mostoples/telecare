@@ -134,8 +134,11 @@
       </div>
 
       <div class="card mt">
-        <div class="card__head">${icon('chart')}<h3>Konsultasi 7 hari terakhir</h3></div>
+        <div class="card__head">${icon('chart')}<h3>Konsultasi 7 hari terakhir</h3>
+          <span class="push"></span><span class="chip">angka contoh</span></div>
         <div class="chart-wrap"><canvas id="cDocWeek" style="height:150px"></canvas></div>
+        <p class="tiny muted mt">Antrean dan pasien binaan di atas berasal dari percakapan
+          sungguhan dan katalog purwarupa; grafik ini belum terhubung ke keduanya.</p>
       </div>
 
       <div class="section-title">${icon('cal')} Janji temu terdekat</div>
@@ -260,6 +263,31 @@
     }).join('')}</div>`;
   }
 
+  /**
+   * Daftar penandaan eskalasi pasien. Sebelumnya tombol "Tandai eskalasi" hanya
+   * memunculkan notifikasi lalu tidak meninggalkan jejak apa pun, sehingga
+   * tampak bekerja padahal tidak.
+   */
+  function gambarEskalasi(patientId) {
+    const list = Store.escalationsFor(patientId);
+    if (!list.length) {
+      return `<div class="card"><p class="small muted tc" style="padding:14px">
+        Belum ditandai untuk tindak lanjut.</p></div>`;
+    }
+    return `<div class="list">${list.map((e) => `
+      <div class="row">
+        <span class="row__ico" style="background:var(--amber-50);color:var(--amber-700)">
+          ${icon('alert')}</span>
+        <div style="min-width:0">
+          <b style="font-size:.87rem">Ditandai perlu tindak lanjut</b>
+          <small>${esc(shortDate(e.at))} · ${esc(hhmm(e.at))} · ${esc(relTime(e.at))}${
+            e.by ? ' · ' + esc(e.by) : ''}</small>
+        </div>
+        <button class="icon-btn" data-esc-del="${esc(e.id)}"
+          aria-label="Hapus penandaan" title="Hapus penandaan">${icon('trash')}</button>
+      </div>`).join('')}</div>`;
+  }
+
   function gambarCatatan(patientId, bolehHapus) {
     const notes = TC.Notes.list(patientId);
     if (!notes.length) {
@@ -292,6 +320,7 @@
     const m = D.STATUS_META[p.status];
     const fac = D.facility(p.fac);
     const riwayat = TC.Consult.forPatient(p.id);
+    const eskalasi = Store.escalationsFor(p.id);
     // Admin faskes memakai layar yang sama lewat /faskes/anggota/:id, tetapi
     // bukan klinisi — catatan klinis dibuka baca saja untuknya.
     const bolehMenulis = Store.is('dokter');
@@ -370,6 +399,11 @@
 
       <div id="patNotes" class="mt">${gambarCatatan(p.id, bolehMenulis)}</div>
 
+      <div class="section-title">${icon('alert')} Penandaan eskalasi
+        <span class="push"></span>
+        <span class="chip" data-esc-count>${eskalasi.length}</span></div>
+      <div id="patEsk">${gambarEskalasi(p.id)}</div>
+
       <div class="grid2 mt2">
         <button class="btn btn--primary btn--block" data-chat>${icon('chat')} Mulai konsultasi</button>
         <button class="btn btn--ghost btn--block" data-esc>${icon('alert')} Tandai eskalasi</button>
@@ -436,8 +470,32 @@
       });
       Router.navigate('/chat/' + c.id);
     };
+    /* ---------------- penandaan eskalasi ---------------- */
+    function segarkanEskalasi() {
+      const box = $('#patEsk');
+      if (box) box.innerHTML = gambarEskalasi(p.id);
+      const c = $('[data-esc-count]');
+      if (c) c.textContent = Store.escalationsFor(p.id).length;
+      pasangHapusEskalasi();
+    }
+
+    function pasangHapusEskalasi() {
+      $$('[data-esc-del]').forEach((b) => {
+        b.onclick = () => {
+          Store.removeEscalation(b.dataset.escDel);
+          segarkanEskalasi();
+          toast('Penandaan dihapus.');
+        };
+      });
+    }
+    pasangHapusEskalasi();
+
     $('[data-esc]').onclick = () => {
+      const u = Store.user();
+      const oleh = (D.doctor(u && u.doctorId) || {}).name || (u && u.name) || null;
+      Store.addEscalation(p.id, oleh);
       Store.notify('Eskalasi ditandai', p.name + ' · ' + p.unit, 'warn');
+      segarkanEskalasi();
       toast('Pasien ditandai untuk tindak lanjut.');
     };
   }
@@ -469,7 +527,12 @@
           ${icon('bell')}</button>
       </div>
 
-      <div class="stat-row">
+      <div class="note note--w">${icon('alert')}
+        <div><b>Angka unit ini contoh</b>Jumlah anggota, perangkat, dan eskalasi berasal dari
+        katalog purwarupa, bukan pendataan sungguhan. Yang benar-benar tersimpan di perangkat ini
+        adalah catatan klinis dan penandaan eskalasi yang Anda buat sendiri.</div></div>
+
+      <div class="stat-row mt">
         <div><b>${f.members}</b><span>Anggota</span></div>
         <div><b>${f.devices}</b><span>Perangkat</span></div>
         <div><b style="color:var(--coral-500)">${crit}</b><span>Eskalasi kritis</span></div>
@@ -517,7 +580,63 @@
       { xLabels: w.map((d) => d.label) });
 
     $('[data-notif]').onclick = () => Router.navigate('/notifikasi');
-    $('[data-report]').onclick = () => toast('Penyusunan laporan belum tersedia pada purwarupa ini.', 'err');
+
+    // Dulu tombol ini hanya memunculkan pesan "belum tersedia". Sekarang ia
+    // benar-benar menyusun berkas: bagian yang nyata (penandaan eskalasi dan
+    // catatan klinis yang dibuat di perangkat ini) dipisahkan tegas dari bagian
+    // yang masih data contoh, supaya laporannya tidak menyesatkan pembacanya.
+    $('[data-report]').onclick = () => susunLaporan(f, members);
+  }
+
+  /** Menyusun laporan unit sebagai berkas CSV yang dapat diunduh. */
+  function susunLaporan(f, members) {
+    const baris = [];
+    const kutip = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const tulis = (arr) => baris.push(arr.map(kutip).join(','));
+
+    tulis(['Laporan unit TeleCare']);
+    tulis(['Unit', f.name]);
+    tulis(['Jenis', f.kind, 'Kota', f.city, 'Paket', f.plan]);
+    tulis(['Disusun', TC.fullDate(new Date()) + ' ' + hhmm(Date.now())]);
+    tulis([]);
+    tulis(['CATATAN: kolom vital dan jumlah anggota berasal dari data contoh purwarupa.',
+           'Kolom penandaan eskalasi dan catatan klinis berisi data sungguhan',
+           'yang dibuat pada perangkat ini.']);
+    tulis([]);
+
+    tulis(['Nama', 'Usia', 'Unit', 'Status', 'HR', 'SpO2', 'Suhu', 'Sistolik', 'Diastolik',
+           'Stres', 'Perangkat', 'Penandaan eskalasi', 'Eskalasi terakhir', 'Catatan klinis']);
+    members.forEach((p) => {
+      const esk = Store.escalationsFor(p.id);
+      tulis([
+        p.name, p.age, p.unit, (D.STATUS_META[p.status] || {}).t || p.status,
+        p.hr, p.spo2, p.temp, p.sys, p.dia, p.stress, p.device,
+        esk.length, esk.length ? TC.shortDate(esk[0].at) + ' ' + hhmm(esk[0].at) : '',
+        TC.Notes.count(p.id)
+      ]);
+    });
+
+    tulis([]);
+    const totalEsk = members.reduce((a, p) => a + Store.escalationsFor(p.id).length, 0);
+    const totalNote = members.reduce((a, p) => a + TC.Notes.count(p.id), 0);
+    tulis(['Ringkasan data sungguhan']);
+    tulis(['Anggota ditampilkan', members.length]);
+    tulis(['Total penandaan eskalasi', totalEsk]);
+    tulis(['Total catatan klinis', totalNote]);
+
+    // BOM ditambahkan agar Excel membuka UTF-8 dengan benar.
+    const blob = new Blob(['\ufeff' + baris.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'laporan-' + f.id + '-' + kunciTanggal() + '.csv';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast('Laporan tersusun · ' + members.length + ' anggota, ' + totalEsk + ' eskalasi.');
+  }
+
+  function kunciTanggal() {
+    const d = new Date();
+    return d.getFullYear() + TC.pad2(d.getMonth() + 1) + TC.pad2(d.getDate());
   }
 
   function viewFacilityMembers() {
@@ -548,10 +667,28 @@
     const f = facilityOf(Store.user());
     TC.topbar('Perangkat Unit', { sub: f.name, back: false });
 
-    // Inventaris dibangkitkan sekali per hari agar angkanya stabil saat dilihat ulang.
+    // Jumlah per jenis dibagi dari total perangkat unit memakai bobot tetap,
+    // sehingga penjumlahannya selalu sama dengan angka "Perangkat" di dashboard
+    // unit. Sebelumnya tiap jenis memakai deret acak lalu jenis pertama
+    // ditambah 40 tanpa alasan, jadi totalnya tidak pernah cocok.
+    //
+    // battery dan synced memakai series7 supaya benar-benar stabil per hari.
+    // Sebelumnya keduanya memakai TC.rint() yang dibangkitkan ulang setiap
+    // render, sehingga kartu "Tersinkron" dan "Baterai rendah" berubah angkanya
+    // setiap kali halaman disegarkan — padahal komentarnya menjanjikan stabil.
+    const BOBOT = { band: 0.34, ring: 0.26, cuff: 0.12, patch: 0.10, strap: 0.10, scale: 0.08 };
+    let sisa = f.devices;
     const inv = D.DEVICE_TYPES.map((t, i) => {
-      const s = series7('inv' + t.type, 4, 60)[6].v;
-      return { t, count: s + (i === 0 ? 40 : 0), battery: TC.rint(46, 96), synced: TC.rint(88, 100) };
+      const akhir = i === D.DEVICE_TYPES.length - 1;
+      // Jenis terakhir mengambil sisanya agar pembulatan tidak menghilangkan unit.
+      const count = akhir ? Math.max(0, sisa)
+                          : Math.round(f.devices * (BOBOT[t.type] || 0.1));
+      sisa -= count;
+      return {
+        t, count,
+        battery: series7('bat-' + f.id + '-' + t.type, 46, 96)[6].v,
+        synced: series7('syn-' + f.id + '-' + t.type, 88, 100)[6].v
+      };
     });
     const total = inv.reduce((a, x) => a + x.count, 0);
 
@@ -561,6 +698,11 @@
         <div><b>${Math.round(inv.reduce((a, x) => a + x.synced, 0) / inv.length)}%</b><span>Tersinkron</span></div>
         <div><b>${inv.filter((x) => x.battery < 55).length}</b><span>Baterai rendah</span></div>
       </div>
+
+      <div class="note note--w mt">${icon('alert')}
+        <div><b>Angka contoh</b>Pembagian per jenis dihitung dari total perangkat unit memakai
+        bobot tetap; baterai dan tingkat sinkronisasi dibangkitkan untuk purwarupa dan tetap
+        sama sepanjang hari. Belum ada inventaris sungguhan yang terhubung.</div></div>
 
       <div class="section-title">${icon('watch')} Inventaris per jenis</div>
       <div class="stack--sm stack">
@@ -595,9 +737,9 @@
     TC.topbar('Tenaga Kesehatan', { sub: f.name, back: false });
     const staff = D.DOCTORS.slice(0, f.staff);
     setView(`
-      <div class="note note--i">${icon('info')}
-        <div><b>${staff.length} nakes terhubung</b>Mereka menerima eskalasi dari unit ini dan dapat
-        memulai konsultasi dengan anggota binaan.</div></div>
+      <div class="note note--w">${icon('alert')}
+        <div><b>Daftar contoh</b>Nakes di bawah diambil dari katalog dokter purwarupa; belum ada
+        penugasan sungguhan antara tenaga kesehatan dan unit ini.</div></div>
 
       <div class="stack mt">
         ${staff.map((doc) => `
@@ -616,9 +758,11 @@
           </div>`).join('')}
       </div>
 
-      <button class="btn btn--ghost btn--block mt2" data-add>${icon('plus')} Undang nakes lain</button>
+      <div class="note note--i mt2">${icon('info')}
+        <div><b>Penugasan nakes memerlukan sisi server</b>Mengundang atau menugaskan tenaga
+        kesehatan ke sebuah unit menuntut direktori pengguna tepercaya, yang belum ada pada
+        purwarupa ini.</div></div>
     `);
-    $('[data-add]').onclick = () => toast('Pengundangan nakes belum tersedia pada purwarupa ini.', 'err');
   }
 
   /* ============================================================
@@ -628,6 +772,12 @@
     const users = Object.values(Store.state.users);
     const totalMembers = D.FACILITIES.reduce((a, f) => a + f.members, 0);
     const totalDevices = D.FACILITIES.reduce((a, f) => a + f.devices, 0);
+    // Daftar menunggu verifikasi diturunkan dari data dan dari apa yang sudah
+    // pernah diverifikasi di perangkat ini, sehingga lencana dan daftarnya
+    // tidak mungkin lepas sinkron.
+    const kandidat = D.DOCTORS.filter((d) => d.verified === false);
+    const sudahDiverifikasi = kandidat.filter((d) => Store.isVerified(d.id));
+    const menunggu = kandidat.filter((d) => !Store.isVerified(d.id));
 
     setTopbar('');
     setView(`
@@ -659,9 +809,10 @@
       </div>
 
       <div class="section-title">${icon('verify')} Menunggu verifikasi
-        <span class="push"></span><span class="chip chip--a">2</span></div>
-      <div class="list">
-        ${D.DOCTORS.slice(6, 8).map((doc) => `
+        <span class="push"></span>
+        <span class="chip ${menunggu.length ? 'chip--a' : 'chip--g'}">${menunggu.length}</span></div>
+      ${menunggu.length ? `<div class="list">
+        ${menunggu.map((doc) => `
           <div class="row">
             <span class="avatar" style="background:${doc.color}">${esc(initials(doc.name))}</span>
             <div style="min-width:0"><b>${esc(doc.name)}</b>
@@ -669,7 +820,9 @@
             <button class="btn btn--soft btn--sm" style="margin-left:auto"
                     data-verify="${doc.id}">Verifikasi</button>
           </div>`).join('')}
-      </div>
+      </div>` : `<div class="card"><p class="small muted tc" style="padding:16px">
+        Semua mitra sudah terverifikasi.${sudahDiverifikasi.length
+          ? ` Diverifikasi dari perangkat ini: ${sudahDiverifikasi.length}.` : ''}</p></div>`}
 
       <div class="section-title">${icon('building')} Faskes teratas</div>
       <div class="list">
@@ -689,7 +842,7 @@
         <a href="#/sistem/pengguna"><i style="background:#EDF9F2;color:#03804C">${icon('users')}</i>Pengguna</a>
         <a href="#/sistem/dokter"><i style="background:#DCEEF9;color:#075A85">${icon('stetho')}</i>Dokter</a>
         <a href="#/sistem/faskes"><i style="background:#EEEBFD;color:#4A3BB8">${icon('building')}</i>Faskes</a>
-        <a href="#/profil/pengaturan"><i style="background:#FFF1D6;color:#8A5D00">${icon('sync')}</i>Sistem</a>
+        <a href="#/sistem/kalibrasi"><i style="background:#E8F4FF;color:#0E7FB8">${icon('target')}</i>Kalibrasi</a>
       </div>
 
       <div class="note note--w mt2">${icon('alert')}
@@ -705,9 +858,12 @@
     $$('[data-verify]').forEach((b) => {
       b.onclick = () => {
         const doc = D.doctor(b.dataset.verify);
+        // Disimpan, bukan hanya menimpa DOM: sebelumnya tombolnya muncul lagi
+        // begitu layar dirender ulang, seolah verifikasinya tidak pernah terjadi.
+        Store.verifyDoctor(doc.id);
         Store.notify('Dokter terverifikasi', doc.name, 'ok');
-        b.outerHTML = `<span class="chip chip--g" style="margin-left:auto">${icon('check')} Terverifikasi</span>`;
         toast(doc.name + ' diverifikasi.');
+        Router.render();
       };
     });
   }
@@ -793,7 +949,10 @@
   function viewSystemDoctors() {
     TC.topbar('Kelola Dokter', { sub: D.DOCTORS.length + ' mitra terdaftar', back: false });
     setView(`
-      <div class="searchbar">${icon('search')}
+      <div class="note note--w">${icon('alert')}
+        <div><b>Katalog contoh</b>Nama, tarif, rating, dan jumlah ulasan berasal dari data
+        purwarupa. Status verifikasi yang Anda ubah tersimpan di perangkat ini.</div></div>
+      <div class="searchbar mt">${icon('search')}
         <input id="dq" type="search" placeholder="Cari nama atau spesialisasi" aria-label="Cari dokter"></div>
       <div class="list mt" id="dList"></div>`);
 
@@ -807,6 +966,9 @@
             <small>${esc(D.spec(doc.spec).name)} · ${esc(doc.hospital)}</small>
             <small class="tiny" style="color:var(--faint)">${rupiah(doc.price)} · ${doc.reviews} ulasan</small></div>
           <span style="margin-left:auto;display:flex;align-items:center;gap:8px">
+            ${doc.verified === false && !Store.isVerified(doc.id)
+              ? `<span class="chip chip--a">${icon('alert')} belum diverifikasi</span>`
+              : `<span class="chip chip--g">${icon('verify')} terverifikasi</span>`}
             ${doc.online ? `<span class="chip chip--g"><i class="dotlive"></i> online</span>`
                          : `<span class="chip">luring</span>`}</span>
         </div>`).join('');
@@ -818,7 +980,10 @@
   function viewSystemFacilities() {
     TC.topbar('Kelola Faskes', { sub: D.FACILITIES.length + ' unit terdaftar', back: false });
     setView(`
-      <div class="stack">
+      <div class="note note--w">${icon('alert')}
+        <div><b>Katalog contoh</b>Jumlah anggota, perangkat, nakes, dan sebaran triase pada
+        kartu-kartu ini adalah data purwarupa.</div></div>
+      <div class="stack mt">
         ${D.FACILITIES.map((f) => {
           const ok = Math.max(0, f.members - f.critical - f.warn);
           return `<div class="card">
@@ -843,9 +1008,358 @@
       </div>`);
   }
 
+  /* ============================================================
+     4. KALIBRASI SENSOR — alat pengembang (khusus admin platform)
+     ============================================================
+     Setiap sensor punya galat sistematisnya sendiri. Layar ini memberi
+     pengembang cara mengoreksinya per jenis perangkat tanpa menyentuh
+     kode: nilai = mentah * gain + offset.
+
+     Sengaja dipisahkan dari Profil → Kalibrasi Tekanan Darah. Yang itu
+     milik pengguna: satu titik acuan dari tensimeter untuk dirinya
+     sendiri. Yang ini milik pengembang: transformasi per model sensor,
+     berlaku untuk semua parameter.
+     ============================================================ */
+  function viewSystemCalibration() {
+    const jenisAktif = sessionStorage.getItem('tc.calType') || 'band';
+    const master = Store.state.sensorCalOn !== false;
+    const aktifDev = Store.activeDevice();
+
+    TC.topbar('Kalibrasi Sensor', { sub: 'Alat pengembang', back: false });
+
+    setView(`
+      <div class="note note--b">${icon('info')}
+        <div><b>Berlaku hanya untuk nilai dari perangkat sungguhan</b>
+        Koreksi diterapkan pada bacaan yang masuk lewat Web Bluetooth
+        (<span class="mono">Vitals.ingest</span>). Nilai simulasi purwarupa tidak dikalibrasi —
+        mengoreksi angka yang dibangkitkan sendiri tidak ada artinya.</div></div>
+
+      <div class="card mt">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="row__ico" style="background:${master ? 'var(--green-50)' : 'var(--canvas-2)'};
+            color:${master ? 'var(--green-600)' : 'var(--faint)'}">${icon('sync')}</span>
+          <div style="min-width:0">
+            <b style="font-size:.95rem">${master ? 'Kalibrasi aktif' : 'Kalibrasi dimatikan'}</b>
+            <small class="muted" style="display:block;font-size:.78rem">
+              ${master ? 'Bacaan sensor dikoreksi sebelum dipakai'
+                       : 'Bacaan sensor dipakai apa adanya'}</small>
+          </div>
+          <label style="margin-left:auto;display:flex;align-items:center">
+            <input type="checkbox" id="calMaster" ${master ? 'checked' : ''}
+                   style="width:22px;height:22px;accent-color:var(--green-500)"></label>
+        </div>
+        ${aktifDev ? `<p class="tiny muted mt">Perangkat aktif di perangkat ini:
+          <b>${esc(aktifDev.name)}</b> (${esc(aktifDev.type)})${
+            aktifDev.type !== jenisAktif ? ' — berbeda dari jenis yang sedang Anda sunting' : ''}</p>` : `
+          <p class="tiny muted mt">Belum ada perangkat terpasang; pratinjau memakai nilai contoh.</p>`}
+      </div>
+
+      <div class="section-title">${icon('watch')} Jenis perangkat</div>
+      <div class="seg" id="calSeg" style="flex-wrap:wrap">
+        ${D.DEVICE_TYPES.map((t) => `
+          <button data-caltype="${esc(t.type)}" class="${t.type === jenisAktif ? 'is-active' : ''}">
+            ${esc(t.name)}${Store.calAktif(t.type) ? ' ●' : ''}</button>`).join('')}
+      </div>
+
+      <div id="calBody" class="mt"></div>
+
+      <div class="section-title">${icon('doc')} Berkas kalibrasi</div>
+      <div class="card">
+        <p class="small" style="color:var(--ink-2)">Seluruh profil dapat dipindahkan antar perangkat
+        pengembang lewat berkas JSON.</p>
+        <div class="duo mt">
+          <button class="btn btn--ghost" data-cal-export>${icon('doc')} Ekspor JSON</button>
+          <button class="btn btn--ghost" data-cal-import>${icon('plus')} Impor JSON</button>
+        </div>
+        <button class="btn btn--dangerSoft btn--block mt" data-cal-reset-all>
+          ${icon('trash')} Kosongkan semua profil</button>
+      </div>
+    `);
+
+    /* ---------------- isi per jenis ---------------- */
+    function nilaiPratinjau(param) {
+      // Pratinjau memakai bacaan mentah sungguhan bila ada; kalau tidak,
+      // memakai nilai tengah rentang parameter supaya efek gain terlihat.
+      const mentahNyata = TC.Vitals.raw ? TC.Vitals.raw()[param] : null;
+      if (typeof mentahNyata === 'number' && isFinite(mentahNyata)) {
+        return { mentah: mentahNyata, nyata: true };
+      }
+      const p = TC.Calib.param(param);
+      const contoh = { hr: 72, hrv: 45, spo2: 97, temp: 36.6, sys: 118, dia: 76, glucose: 95 };
+      return { mentah: contoh[param] != null ? contoh[param] : Math.round((p.min + p.max) / 2), nyata: false };
+    }
+
+    function gambarBody() {
+      const jenis = sessionStorage.getItem('tc.calType') || 'band';
+      const t = D.deviceType(jenis);
+      const params = TC.Calib.paramsFor(jenis);
+      const body = $('#calBody');
+      if (!body) return;
+
+      if (!params.length) {
+        body.innerHTML = `<div class="empty">${icon('info')}
+          <b>${esc(t.name)} tidak memasok parameter vital</b>
+          <p>Kemampuannya (${esc((t.caps || []).join(', '))}) belum masuk ke mesin vital,
+             jadi tidak ada yang perlu dikalibrasi di sini.</p></div>`;
+        return;
+      }
+
+      body.innerHTML = `
+        <div class="stack--sm stack">
+          ${params.map((p) => {
+            const c = Store.cal(jenis, p.id);
+            const pv = nilaiPratinjau(p.id);
+            const hasil = TC.Calib.apply(p.id, pv.mentah, jenis);
+            return `
+            <div class="card" data-cal-row="${esc(p.id)}">
+              <div style="display:flex;align-items:center;gap:10px">
+                <b style="font-size:.95rem">${esc(p.label)}</b>
+                <span class="chip" style="font-size:.66rem">${esc(p.unit)}</span>
+                <span class="push"></span>
+                <label style="display:flex;align-items:center;gap:7px" class="tiny muted">aktif
+                  <input type="checkbox" data-cal-on="${esc(p.id)}" ${c.on ? 'checked' : ''}
+                         style="width:18px;height:18px;accent-color:var(--green-500)"></label>
+              </div>
+
+              <div class="duo mt">
+                <label class="field" style="margin:0"><span>Gain (pengali)</span>
+                  <input type="number" step="0.0001" data-cal-gain="${esc(p.id)}" value="${c.gain}"></label>
+                <label class="field" style="margin:0"><span>Offset (${esc(p.unit)})</span>
+                  <input type="number" step="0.01" data-cal-offset="${esc(p.id)}" value="${c.offset}"></label>
+              </div>
+
+              <div class="mono small mt" style="background:var(--canvas);border:1px solid var(--line);
+                   border-radius:12px;padding:10px 12px;color:var(--ink-2)">
+                ${pv.nyata ? '' : 'contoh '}mentah <b>${pv.mentah}</b>
+                &nbsp;→&nbsp; terkoreksi <b style="color:var(--green-600)"
+                data-cal-out="${esc(p.id)}">${hasil == null ? '—' : Math.round(hasil * 100) / 100}</b>
+                <span class="tiny muted"> · rentang sah ${p.min}–${p.max}</span>
+              </div>
+
+              <details class="mt">
+                <summary class="small" style="cursor:pointer;color:var(--green-600);font-weight:700">
+                  Hitung dari dua titik pengukuran</summary>
+                <p class="tiny muted mt">Ukur dua kali dengan alat acuan, lalu masukkan pasangannya.
+                   Gain dan offset dihitung dari garis yang melewati keduanya.</p>
+                <div class="duo mt">
+                  <label class="field" style="margin:0"><span>Mentah 1</span>
+                    <input type="number" step="0.01" data-tp="m1" data-tpp="${esc(p.id)}"></label>
+                  <label class="field" style="margin:0"><span>Acuan 1</span>
+                    <input type="number" step="0.01" data-tp="a1" data-tpp="${esc(p.id)}"></label>
+                </div>
+                <div class="duo">
+                  <label class="field" style="margin:0"><span>Mentah 2</span>
+                    <input type="number" step="0.01" data-tp="m2" data-tpp="${esc(p.id)}"></label>
+                  <label class="field" style="margin:0"><span>Acuan 2</span>
+                    <input type="number" step="0.01" data-tp="a2" data-tpp="${esc(p.id)}"></label>
+                </div>
+                <button class="btn btn--soft btn--sm btn--block mt" data-cal-fit="${esc(p.id)}">
+                  ${icon('sparkle')} Hitung gain &amp; offset</button>
+              </details>
+            </div>`;
+          }).join('')}
+        </div>
+
+        <div class="duo mt2">
+          <button class="btn btn--primary" data-cal-save>${icon('check')} Simpan</button>
+          <button class="btn btn--ghost" data-cal-reset>${icon('refresh')} Netralkan jenis ini</button>
+        </div>`;
+
+      pasangBody(jenis);
+    }
+
+    function bacaAngka(sel) {
+      const el = $(sel);
+      if (!el) return null;
+      const v = parseFloat(el.value);
+      return isFinite(v) ? v : null;
+    }
+
+    function pasangBody(jenis) {
+      // Pratinjau diperbarui saat gain/offset diubah, tanpa perlu menyimpan.
+      const segarkanPratinjau = (id) => {
+        const g = bacaAngka(`[data-cal-gain="${id}"]`);
+        const o = bacaAngka(`[data-cal-offset="${id}"]`);
+        const on = $(`[data-cal-on="${id}"]`).checked;
+        const pv = nilaiPratinjau(id);
+        const p = TC.Calib.param(id);
+        const out = $(`[data-cal-out="${id}"]`);
+        if (!out) return;
+        if (!on || g == null || o == null) { out.textContent = on ? '—' : pv.mentah; return; }
+        const v = clamp(pv.mentah * g + o, p.min, p.max);
+        out.textContent = Math.round(v * 100) / 100;
+      };
+
+      $$('[data-cal-gain], [data-cal-offset]').forEach((el) => {
+        el.oninput = () => segarkanPratinjau(el.dataset.calGain || el.dataset.calOffset);
+      });
+      $$('[data-cal-on]').forEach((el) => {
+        el.onchange = () => segarkanPratinjau(el.dataset.calOn);
+      });
+
+      $$('[data-cal-fit]').forEach((b) => {
+        b.onclick = () => {
+          const id = b.dataset.calFit;
+          const g = (n) => {
+            const el = $(`[data-tp="${n}"][data-tpp="${id}"]`);
+            const v = el ? parseFloat(el.value) : NaN;
+            return isFinite(v) ? v : null;
+          };
+          const hasil = TC.Calib.dariDuaTitik(g('m1'), g('a1'), g('m2'), g('a2'));
+          if (!hasil) {
+            toast('Lengkapi keempat angka, dan pastikan dua nilai mentahnya berbeda.', 'err');
+            return;
+          }
+          $(`[data-cal-gain="${id}"]`).value = hasil.gain;
+          $(`[data-cal-offset="${id}"]`).value = hasil.offset;
+          segarkanPratinjau(id);
+          toast(`gain ${hasil.gain} · offset ${hasil.offset}`);
+        };
+      });
+
+      $('[data-cal-save]').onclick = () => {
+        let n = 0;
+        TC.Calib.paramsFor(jenis).forEach((p) => {
+          const g = bacaAngka(`[data-cal-gain="${p.id}"]`);
+          const o = bacaAngka(`[data-cal-offset="${p.id}"]`);
+          const on = $(`[data-cal-on="${p.id}"]`).checked;
+          if (g == null || o == null) return;
+          if (g === 0) return;                   // gain nol menghapus sinyal
+          Store.setCal(jenis, p.id, { gain: g, offset: o, on });
+          n++;
+        });
+        toast(n ? `${n} parameter disimpan untuk ${D.deviceType(jenis).name}.`
+                : 'Tidak ada nilai sah untuk disimpan.', n ? '' : 'err');
+        Router.render();
+      };
+
+      $('[data-cal-reset]').onclick = async () => {
+        const ok = await confirmSheet({
+          title: 'Netralkan kalibrasi?',
+          body: `Seluruh gain dan offset untuk ${D.deviceType(jenis).name} kembali ke 1 dan 0.`,
+          ok: 'Netralkan', danger: true
+        });
+        if (!ok) return;
+        Store.resetCal(jenis);
+        toast('Kalibrasi dinetralkan.');
+        Router.render();
+      };
+    }
+
+    gambarBody();
+
+    /* ---------------- pemilih jenis ---------------- */
+    const seg = $('#calSeg');
+    $$('[data-caltype]', seg).forEach((b) => {
+      b.onclick = () => {
+        sessionStorage.setItem('tc.calType', b.dataset.caltype);
+        $$('[data-caltype]', seg).forEach((x) => x.classList.remove('is-active'));
+        b.classList.add('is-active');
+        gambarBody();
+      };
+    });
+
+    $('#calMaster').onchange = (e) => {
+      Store.update((s) => { s.sensorCalOn = e.target.checked; });
+      toast(e.target.checked ? 'Kalibrasi sensor aktif.' : 'Kalibrasi sensor dimatikan.');
+      Router.render();
+    };
+
+    /* ---------------- berkas ---------------- */
+    $('[data-cal-export]').onclick = () => {
+      const isi = JSON.stringify({
+        jenis: 'telecare-kalibrasi-sensor', versi: 1,
+        dibuat: new Date().toISOString(),
+        aktif: Store.state.sensorCalOn !== false,
+        profil: Store.state.sensorCal || {}
+      }, null, 2);
+      const blob = new Blob([isi], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'telecare-kalibrasi.json';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      toast('Berkas kalibrasi diunduh.');
+    };
+
+    $('[data-cal-import]').onclick = () => {
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = 'application/json,.json';
+      inp.onchange = () => {
+        const f = inp.files && inp.files[0];
+        if (!f) return;
+        const fr = new FileReader();
+        fr.onload = () => {
+          try {
+            const j = JSON.parse(String(fr.result));
+            const profil = j && j.profil;
+            if (!profil || typeof profil !== 'object') throw new Error('struktur tidak dikenali');
+            // Hanya jenis perangkat dan parameter yang dikenal yang diterima,
+            // supaya berkas asing tidak menyuntikkan kunci sembarangan.
+            let n = 0;
+            Object.keys(profil).forEach((jenis) => {
+              if (!D.DEVICE_TYPES.some((t) => t.type === jenis)) return;
+              Object.keys(profil[jenis] || {}).forEach((param) => {
+                if (!TC.Calib.param(param)) return;
+                const c = profil[jenis][param] || {};
+                const g = typeof c.gain === 'number' ? c.gain : 1;
+                const o = typeof c.offset === 'number' ? c.offset : 0;
+                if (!isFinite(g) || !isFinite(o) || g === 0) return;
+                Store.setCal(jenis, param, { gain: g, offset: o, on: c.on !== false });
+                n++;
+              });
+            });
+            if (typeof j.aktif === 'boolean') {
+              Store.update((s) => { s.sensorCalOn = j.aktif; });
+            }
+            toast(n ? `${n} parameter diimpor.` : 'Tidak ada parameter yang dikenali.', n ? '' : 'err');
+            Router.render();
+          } catch (e) {
+            toast('Berkas tidak dapat dibaca: ' + e.message, 'err');
+          }
+        };
+        fr.readAsText(f);
+      };
+      inp.click();
+    };
+
+    $('[data-cal-reset-all]').onclick = async () => {
+      const ok = await confirmSheet({
+        title: 'Kosongkan semua profil kalibrasi?',
+        body: 'Seluruh jenis perangkat kembali netral. Tindakan ini tidak dapat dibatalkan.',
+        ok: 'Kosongkan', danger: true
+      });
+      if (!ok) return;
+      Store.resetCal();
+      toast('Semua profil dikosongkan.');
+      Router.render();
+    };
+
+    // Pratinjau mengikuti bacaan yang masuk, supaya efek koreksi terlihat langsung.
+    const un = TC.Vitals.subscribe(() => {
+      TC.Calib.paramsFor(sessionStorage.getItem('tc.calType') || 'band').forEach((p) => {
+        const out = $(`[data-cal-out="${p.id}"]`);
+        if (!out) return;
+        const pv = nilaiPratinjau(p.id);
+        if (!pv.nyata) return;
+        const g = bacaAngka(`[data-cal-gain="${p.id}"]`);
+        const o = bacaAngka(`[data-cal-offset="${p.id}"]`);
+        const on = $(`[data-cal-on="${p.id}"]`);
+        if (g == null || o == null || !on) return;
+        const meta = TC.Calib.param(p.id);
+        out.textContent = on.checked
+          ? Math.round(clamp(pv.mentah * g + o, meta.min, meta.max) * 100) / 100
+          : pv.mentah;
+      });
+    });
+    Router.onLeave(un);
+  }
+
   TC.views = TC.views || {};
   Object.assign(TC.views, {
     clinic: viewClinic, queue: viewQueue, patients: viewPatients, patientDetail: viewPatientDetail,
+    systemCalibration: viewSystemCalibration,
     facility: viewFacility, facilityMembers: viewFacilityMembers,
     facilityDevices: viewFacilityDevices, facilityStaff: viewFacilityStaff,
     system: viewSystem, systemUsers: viewSystemUsers,

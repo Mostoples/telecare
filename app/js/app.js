@@ -19,16 +19,18 @@
     ['/lengkapi',     V.complete,  { guard: 'auth',  chrome: false }],
 
     ['/home',         V.home,      { guard: 'auth', roles: ['pasien'], tab: 'home' }],
-    ['/vital/:kind',  V.vital,     { guard: 'auth', tab: 'home' }],
+    ['/vital/:kind',  V.vital,     { guard: 'auth', roles: ['pasien'], tab: 'home' }],
     ['/analisis',     V.analysis,  { guard: 'auth', roles: ['pasien'], tab: 'analisis' }],
-    ['/riwayat',      V.history,   { guard: 'auth', tab: 'riwayat' }],
+    ['/riwayat',      V.history,   { guard: 'auth', roles: ['pasien'], tab: 'riwayat' }],
     ['/notifikasi',   V.notifications, { guard: 'auth', tab: 'home' }],
-    ['/artikel/:id',  V.article,   { guard: 'auth', tab: 'home' }],
+    ['/artikel/:id',  V.article,   { guard: 'auth', roles: ['pasien'], tab: 'home' }],
 
+    // Seluruh rute sesi makan hanya bermakna bagi pasien; tanpa penjaga ini,
+    // peran lain melihat layar berisi datanya sendiri yang selalu kosong.
     ['/sesi/kamera',   V.camera,   { guard: 'auth', roles: ['pasien'], chrome: false }],
-    ['/sesi/hasil',    V.result,   { guard: 'auth', tab: 'catat' }],
-    ['/sesi/berjalan', V.running,  { guard: 'auth', tab: 'catat' }],
-    ['/sesi/:id',      V.summary,  { guard: 'auth', tab: 'riwayat' }],
+    ['/sesi/hasil',    V.result,   { guard: 'auth', roles: ['pasien'], tab: 'catat' }],
+    ['/sesi/berjalan', V.running,  { guard: 'auth', roles: ['pasien'], tab: 'catat' }],
+    ['/sesi/:id',      V.summary,  { guard: 'auth', roles: ['pasien'], tab: 'riwayat' }],
 
     ['/konsultasi',                 V.consult,   { guard: 'auth', tab: 'konsultasi' }],
     ['/konsultasi/spesialis/:id',   V.specialty, { guard: 'auth', tab: 'konsultasi' }],
@@ -59,6 +61,8 @@
     ['/sistem/pengguna',  V.systemUsers,       { guard: 'auth', roles: ['admin'], tab: 's-pengguna' }],
     ['/sistem/dokter',    V.systemDoctors,     { guard: 'auth', roles: ['admin'], tab: 's-dokter' }],
     ['/sistem/faskes',    V.systemFacilities,  { guard: 'auth', roles: ['admin'], tab: 's-faskes' }],
+    // Alat pengembang: kalibrasi sensor per jenis perangkat. Khusus admin platform.
+    ['/sistem/kalibrasi', V.systemCalibration, { guard: 'auth', roles: ['admin'], tab: 's-home' }],
 
     ['/profil',             V.profile,     { guard: 'auth', tab: 'profil' }],
     ['/profil/pribadi',     V.personal,    { guard: 'auth', tab: 'profil' }],
@@ -155,9 +159,15 @@
         { id: 'perangkat', label: 'Perangkat', icon: 'watch', href: '#/perangkat' },
         { id: 'riwayat', label: 'Riwayat', icon: 'doc', href: '#/riwayat' }
       ],
-      'dokter': [{ id: 'riwayat', label: 'Riwayat', icon: 'doc', href: '#/riwayat' }],
+      // Dokter tidak lagi ditautkan ke /riwayat: layar itu memuat riwayat sesi
+      // makan milik pengguna sendiri, yang bagi dokter selalu kosong. Riwayat
+      // konsultasi dokter ada di /klinik/antrean tab "Selesai".
+      'dokter': [],
       'admin-faskes': [],
-      'admin': [{ id: 'pengaturan', label: 'Pengaturan', icon: 'sync', href: '#/profil/pengaturan' }]
+      'admin': [
+        { id: 'kalibrasi', label: 'Kalibrasi Sensor', icon: 'target', href: '#/sistem/kalibrasi' },
+        { id: 'pengaturan', label: 'Pengaturan', icon: 'sync', href: '#/profil/pengaturan' }
+      ]
     };
     const SIDE = tabsFor(role)
       .filter((t) => t.id !== 'profil')
@@ -183,7 +193,23 @@
       </div>`;
   }
 
+  /**
+   * Menyesuaikan penanda tab dengan susunan navigasi peran yang aktif.
+   *
+   * Rute bersama seperti /notifikasi menyebut tab 'home', dan tab itu hanya
+   * ada pada peran pasien. Tanpa penyesuaian ini, dokter maupun admin yang
+   * membuka layar tersebut tidak melihat satu pun tab tersorot — tampak seperti
+   * navigasi yang rusak. Bila tab yang diminta tidak ada, dipakai tab pertama
+   * peran itu.
+   */
+  function resolveTab(tab) {
+    const tabs = tabsFor(Store.role());
+    if (tab && tabs.some((t) => t.id === tab)) return tab;
+    return tabs.length ? tabs[0].id : tab;
+  }
+
   function paintNav(tab) {
+    tab = resolveTab(tab);
     $$('#tabbar .tab').forEach((a) => a.classList.toggle('is-active', a.dataset.tab === tab));
     const path = Router.current.path || '';
     $$('#sidebar .side-link').forEach((a) => {

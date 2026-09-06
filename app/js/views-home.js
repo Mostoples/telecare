@@ -113,7 +113,14 @@
     });
   }
 
-  /* ---------------- BERANDA ---------------- */
+  /* ---------------- BERANDA ----------------
+     Catatan soal kartu EKG: yang dihitung aplikasi ini hanya LAJU (dari
+     detak jantung), bukan klasifikasi irama. Sebelumnya di kartu itu
+     tertulis "Sinus normal" secara literal, yang menyiratkan analisis
+     morfologi yang tidak pernah dilakukan.
+
+     Komentar ini sengaja berada di luar template: komentar HTML di dalam
+     literal template ikut terkirim ke DOM peramban. */
   function viewHome() {
     const user = Store.user();
     const p = Store.profile();
@@ -163,7 +170,7 @@
           <div style="display:flex;gap:18px;margin-top:10px;flex-wrap:wrap">
             <div class="tiny muted">Interval RR<b class="mono" style="display:block;color:var(--ink);font-size:.9rem" data-rr>—</b></div>
             <div class="tiny muted">HRV (RMSSD)<b class="mono" style="display:block;color:var(--ink);font-size:.9rem" data-hrv>—</b></div>
-            <div class="tiny muted">Irama<b style="display:block;color:var(--green-600);font-size:.9rem">Sinus normal</b></div>
+            <div class="tiny muted">Laju<b style="display:block;color:var(--green-600);font-size:.9rem" data-laju>—</b></div>
           </div>
         </div>` : ''}
 
@@ -287,6 +294,11 @@
       const rr = $('[data-rr]', root), hv = $('[data-hrv]', root);
       if (rr) rr.textContent = Math.round(60000 / TC.Vitals.state.hr) + ' ms';
       if (hv) hv.textContent = TC.Vitals.state.hrv + ' ms';
+      const lj = $('[data-laju]', root);
+      if (lj) {
+        const hr = TC.Vitals.state.hr;
+        lj.textContent = hr < 50 ? 'Bradikardia' : hr > 100 ? 'Takikardia' : 'Normal';
+      }
     });
 
     const mealTimer = setInterval(() => {
@@ -346,7 +358,13 @@
     const v = TC.Vitals.snapshot();
     const cur = params.kind === 'bp' ? v.sys + '/' + v.dia : v[meta.key];
 
-    TC.topbar(meta.title, { sub: 'Data langsung dari perangkat' });
+    // Subjudul mengikuti asal angka yang sebenarnya. Sebelumnya layar ini
+    // selalu mengaku "langsung dari perangkat", padahal beranda sudah jujur
+    // membedakan sensor dari simulasi.
+    const dariPerangkat = TC.Vitals.source() === 'device';
+    TC.topbar(meta.title, {
+      sub: dariPerangkat ? 'Data langsung dari perangkat' : 'Nilai simulasi purwarupa'
+    });
     setView(`
       <div class="card tc">
         <div class="tiny muted" style="text-transform:uppercase;letter-spacing:.08em;font-weight:800">Saat ini</div>
@@ -358,8 +376,12 @@
       </div>
 
       <div class="card mt">
-        <div class="card__head"><h3>60 pembacaan terakhir</h3></div>
+        <div class="card__head"><h3>60 pembacaan terakhir</h3>
+          <span class="push"></span>${sumberChip()}</div>
         <div class="chart-wrap"><canvas id="vChart" style="height:170px"></canvas></div>
+        ${params.kind === 'bp' ? `<div class="legend">
+          <div><i style="background:#6C5CE7"></i>Sistolik</div>
+          <div><i style="background:#7CC3E8"></i>Diastolik</div></div>` : ''}
       </div>
 
       <div class="card mt">
@@ -386,7 +408,7 @@
       if (params.kind === 'bp') {
         TC.lineChart(cv, [
           { data: H.sys, color: '#6C5CE7', fill: true },
-          { data: H.sys.map((s, i) => s - (30 + (i % 5))), color: '#7CC3E8' }
+          { data: H.dia, color: '#7CC3E8' }
         ], {});
       } else {
         TC.lineChart(cv, [{ data: H[meta.key], color: meta.color, fill: true }], {});
@@ -410,12 +432,17 @@
 
     const week = TC.weekTrend();
     const labels = week.map((d) => d.label);
+    // Berapa hari yang benar-benar punya rekaman, dan berapa di antaranya
+    // berasal dari sensor. Dipakai agar layar ini tidak pernah menyiratkan
+    // tren yang datanya tidak ada.
+    const hariAda = week.filter((d) => d.ada).length;
+    const hariSensor = week.filter((d) => d.sumber === 'device').length;
 
     setView(`
-      <div class="seg" role="tablist">
-        <button data-tab="vital" class="${tab === 'vital' ? 'is-active' : ''}">Vital</button>
-        <button data-tab="gizi" class="${tab === 'gizi' ? 'is-active' : ''}">Gizi</button>
-        <button data-tab="sesi" class="${tab === 'sesi' ? 'is-active' : ''}">Respons</button>
+      <div class="seg" id="anaSeg" role="tablist">
+        <button data-atab="vital" class="${tab === 'vital' ? 'is-active' : ''}">Vital</button>
+        <button data-atab="gizi" class="${tab === 'gizi' ? 'is-active' : ''}">Gizi</button>
+        <button data-atab="sesi" class="${tab === 'sesi' ? 'is-active' : ''}">Respons</button>
       </div>
       <div id="tabBody" class="mt"></div>
     `);
@@ -444,9 +471,9 @@
             </div>
 
             <div class="card">
-              <div class="card__head">${icon('moon')}<h3>Durasi tidur</h3></div>
-              <div class="chart-wrap"><canvas id="cSleep" style="height:150px"></canvas></div>
-              <div class="legend"><div><i style="background:#0E7FB8"></i>jam per malam</div></div>
+              <div class="card__head">${icon('spo2')}<h3>Saturasi terendah harian</h3></div>
+              <div class="chart-wrap"><canvas id="cSpo2" style="height:150px"></canvas></div>
+              <div class="legend"><div><i style="background:#0E7FB8"></i>SpO₂ terendah (%)</div></div>
             </div>
 
             <div class="card">
@@ -456,18 +483,37 @@
             </div>
           </div>
 
-          <div class="insight mt">
-            <div class="insight__glow"></div>
-            <div class="tag">${icon('sparkle')} Pola pekan ini</div>
-            <h5>${esc(weekSummaryTitle(week))}</h5>
-            <p>${esc(weekSummaryBody(week))}</p>
-          </div>`;
+          <div class="card mt">
+            <div class="card__head">${icon('moon')}<h3>Durasi tidur</h3>
+              <span class="push"></span><span class="chip">belum tersedia</span></div>
+            <div class="empty" style="padding:22px 10px">${icon('moon')}
+              <b>Tidak ada perangkat yang melaporkan tidur</b>
+              <p>TeleRing mencantumkan kemampuan ini, tetapi aplikasi belum membaca
+                 karakteristik tidur dari perangkat. Grafik akan muncul setelah pembacaannya ada —
+                 bukan diisi angka perkiraan.</p></div>
+          </div>
+
+          <div class="note note--${hariAda ? 'i' : 'w'} mt">${icon(hariAda ? 'info' : 'alert')}
+            <div><b>${hariAda} dari 7 hari punya data</b>${
+              hariAda
+                ? 'Tren dihitung dari pembacaan yang benar-benar berjalan di perangkat ini' +
+                  (hariSensor ? `, ${hariSensor} hari di antaranya dari sensor.` : ', seluruhnya dari simulasi purwarupa.')
+                : 'Belum ada rekaman. Biarkan aplikasi terbuka beberapa saat, atau sambungkan perangkat, lalu buka lagi layar ini.'
+            }</div></div>
+
+          ${hariAda >= 2 ? `
+            <div class="insight mt">
+              <div class="insight__glow"></div>
+              <div class="tag">${icon('sparkle')} Pola pekan ini</div>
+              <h5>${esc(weekSummaryTitle(week))}</h5>
+              <p>${esc(weekSummaryBody(week))}</p>
+            </div>` : ''}`;
 
         TC.lineChart($('#cRhr'), [{ data: week.map((d) => d.rhr), color: '#049A5B', fill: true, dots: true }],
           { xLabels: labels });
-        TC.lineChart($('#cSleep'), [{ data: week.map((d) => d.sleep), color: '#0E7FB8', fill: true, dots: true }],
+        TC.lineChart($('#cSpo2'), [{ data: week.map((d) => d.spo2), color: '#0E7FB8', fill: true, dots: true }],
           { xLabels: labels });
-        TC.barChart($('#cSteps'), week.map((d) => d.steps), labels, '#28B87A');
+        TC.barChart($('#cSteps'), week.map((d) => d.steps || 0), labels, '#28B87A');
 
       } else if (t === 'gizi') {
         const days = last7Meals();
@@ -537,29 +583,63 @@
     }
 
     renderTab(tab);
-    $$('[data-tab]').forEach((b) => {
+
+    // Segmen ini sengaja memakai `data-atab`, bukan `data-tab`: tab navigasi
+    // bawah juga memakai `data-tab`, dan `$$` berlingkup seluruh dokumen —
+    // sehingga menekan "Beranda" sebelumnya ikut menjalankan penggantian tab
+    // Analisis sekaligus mencabut sorotan navigasi. Pencarian juga dibatasi
+    // ke dalam wadah segmennya.
+    const seg = $('#anaSeg');
+    $$('[data-atab]', seg).forEach((b) => {
       b.onclick = () => {
-        $$('[data-tab]').forEach((x) => x.classList.remove('is-active'));
+        $$('[data-atab]', seg).forEach((x) => x.classList.remove('is-active'));
         b.classList.add('is-active');
-        renderTab(b.dataset.tab);
+        renderTab(b.dataset.atab);
+        // URL diperbarui tanpa memicu navigasi, supaya tab yang sedang dibuka
+        // ikut terbawa saat halaman dimuat ulang atau tautannya dibagikan.
+        try {
+          history.replaceState(null, '', '#/analisis?tab=' + b.dataset.atab);
+        } catch (e) { /* peramban menolak, abaikan */ }
       };
     });
   }
 
+  /** Rata-rata sebuah ukuran, hanya atas hari yang punya data. */
+  function rerata(week, kunci) {
+    const v = week.map((d) => d[kunci]).filter((x) => typeof x === 'number');
+    return v.length ? v.reduce((a, x) => a + x, 0) / v.length : null;
+  }
+
   function weekSummaryTitle(week) {
-    const first = week.slice(0, 3).reduce((a, d) => a + d.rhr, 0) / 3;
-    const last = week.slice(-3).reduce((a, d) => a + d.rhr, 0) / 3;
-    if (last - first > 2.5) return 'Detak jantung istirahat cenderung naik';
-    if (first - last > 2.5) return 'Detak jantung istirahat membaik';
+    // Hanya hari berdata yang dibandingkan; hari kosong tidak boleh menarik
+    // rata-rata dan menciptakan "kecenderungan" yang tidak ada.
+    const ada = week.filter((d) => d.ada && d.rhr != null);
+    if (ada.length < 2) return 'Data belum cukup untuk menyimpulkan pola';
+    const separuh = Math.ceil(ada.length / 2);
+    const awal = ada.slice(0, separuh).reduce((a, d) => a + d.rhr, 0) / separuh;
+    const akhir = ada.slice(-separuh).reduce((a, d) => a + d.rhr, 0) / separuh;
+    if (akhir - awal > 2.5) return 'Detak jantung istirahat cenderung naik';
+    if (awal - akhir > 2.5) return 'Detak jantung istirahat membaik';
     return 'Ritme pekan ini relatif stabil';
   }
+
   function weekSummaryBody(week) {
-    const avgSleep = (week.reduce((a, d) => a + d.sleep, 0) / week.length).toFixed(1);
-    const avgSteps = Math.round(week.reduce((a, d) => a + d.steps, 0) / week.length);
-    const hiStress = week.filter((d) => d.stress > 55).length;
-    return `Rata-rata tidur ${avgSleep} jam per malam dan ${avgSteps.toLocaleString('id-ID')} langkah per hari. ` +
-      (hiStress ? `Ada ${hiStress} hari dengan indeks stres tinggi — perhatikan pemicunya pada hari-hari tersebut.`
-                : 'Tidak ada hari dengan indeks stres tinggi pada periode ini.');
+    const bagian = [];
+    const rhr = rerata(week, 'rhr');
+    if (rhr != null) bagian.push(`Detak jantung istirahat rata-rata ${Math.round(rhr)} bpm`);
+    const spo2 = rerata(week, 'spo2');
+    if (spo2 != null) bagian.push(`saturasi terendah rata-rata ${Math.round(spo2)}%`);
+    const langkah = week.map((d) => d.steps || 0);
+    const totalLangkah = langkah.reduce((a, x) => a + x, 0);
+    if (totalLangkah > 0) {
+      const hariJalan = langkah.filter((x) => x > 0).length;
+      bagian.push(`${Math.round(totalLangkah / hariJalan).toLocaleString('id-ID')} langkah per hari aktif`);
+    }
+    const tinggi = week.filter((d) => d.stress != null && d.stress > 55).length;
+    const ekor = tinggi
+      ? ` Ada ${tinggi} hari dengan indeks stres tinggi — perhatikan pemicunya pada hari-hari tersebut.`
+      : ' Tidak ada hari dengan indeks stres tinggi pada periode ini.';
+    return (bagian.length ? bagian.join(', ') + '.' : 'Belum ada ukuran yang terkumpul.') + ekor;
   }
 
   function last7Meals() {

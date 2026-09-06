@@ -186,11 +186,6 @@
         <button class="btn btn--ghost btn--lg btn--block" data-google>
           ${icon('google')} Masuk dengan Google</button>
 
-        <div class="social mt">
-          <button data-social="Apple" aria-label="Masuk dengan Apple">${icon('apple')}</button>
-          <button data-social="Nomor telepon" aria-label="Masuk dengan nomor telepon">${icon('phone')}</button>
-        </div>
-
         <div class="alt">atau tanpa akun</div>
         <button class="btn btn--soft btn--lg btn--block" data-guest>
           ${icon('user')} Masuk sebagai Tamu</button>
@@ -204,9 +199,10 @@
     bindEye();
     $('[data-back-onb]').onclick = () => Router.navigate('/mulai');
     $('[data-go-daftar]').onclick = () => Router.navigate('/daftar');
-    $$('[data-social]').forEach((b) => {
-      b.onclick = () => toast('Masuk lewat ' + b.dataset.social + ' belum tersedia di purwarupa ini.', 'err');
-    });
+    // Tombol Apple dan nomor telepon dihapus, bukan disembunyikan: keduanya
+    // hanya memunculkan pesan "belum tersedia" dan tidak pernah bisa bekerja
+    // tanpa penyedia yang diaktifkan. Tombol yang tidak melakukan apa pun lebih
+    // buruk daripada tidak ada tombol.
     $('[data-google]').onclick = () => googleSignIn($('[data-google]'));
     $('[data-guest]').onclick = () => guestSheet();
 

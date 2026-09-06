@@ -107,9 +107,26 @@ window.TC = window.TC || {};
     // Catatan klinis dokter, dikelompokkan per pasien:
     //   { [patientId]: [{ id, at, author, role, text }] }
     clinicalNotes: {},
+    // Dokter yang sudah diverifikasi admin platform (daftar id).
+    verifiedDoctors: [],
+    /* Kalibrasi tingkat sensor, milik pengembang — dikelompokkan per jenis
+       perangkat lalu per parameter:
+         { band: { hr: { gain: 1, offset: 0, on: true }, ... }, ... }
+       Berbeda dari `profile.bpCal` yang merupakan satu titik acuan tensimeter
+       milik pengguna. Yang ini mengubah nilai mentah dari sensor sebelum
+       masuk ke mesin vital: nilai = mentah * gain + offset. */
+    sensorCal: {},
+    // Sakelar induk kalibrasi sensor; dimatikan berarti nilai mentah dipakai apa adanya.
+    sensorCalOn: true,
+    // Pasien yang ditandai perlu tindak lanjut:
+    //   [{ id, patientId, at, by }]
+    escalations: [],
     appointments: [],
     notifications: [],
     vitalsHistory: [],
+    // Agregat vital per hari, dipakai tren 7 hari pada layar Analisis:
+    //   { 'YYYY-MM-DD': { n, hrSum, hrMin, stressSum, spo2Min, steps, sumber } }
+    dailyVitals: {},
     profile: {
       nickname: '', gender: '', age: null, height: null, weight: null,
       goal: 'jaga-berat',
@@ -152,6 +169,73 @@ window.TC = window.TC || {};
       return state.devices.find((d) => d.id === state.activeDeviceId) || null;
     },
     connectedDevices() { return state.devices.filter((d) => d.connected); },
+
+    /* ---------------- verifikasi dokter (admin platform) ---------------- */
+    isVerified(doctorId) {
+      return (state.verifiedDoctors || []).indexOf(doctorId) !== -1;
+    },
+    verifyDoctor(doctorId) {
+      if (!doctorId || this.isVerified(doctorId)) return false;
+      state.verifiedDoctors = (state.verifiedDoctors || []).concat([doctorId]);
+      save();
+      return true;
+    },
+
+    /* ---------------- kalibrasi sensor (pengembang) ---------------- */
+    /** Kalibrasi satu parameter pada satu jenis perangkat, dengan nilai bawaan netral. */
+    cal(deviceType, param) {
+      const all = state.sensorCal || {};
+      const perJenis = all[deviceType] || {};
+      const c = perJenis[param];
+      return {
+        gain: c && typeof c.gain === 'number' ? c.gain : 1,
+        offset: c && typeof c.offset === 'number' ? c.offset : 0,
+        on: !c || c.on !== false
+      };
+    },
+    setCal(deviceType, param, patch) {
+      if (!deviceType || !param) return null;
+      if (!state.sensorCal) state.sensorCal = {};
+      if (!state.sensorCal[deviceType]) state.sensorCal[deviceType] = {};
+      const kini = this.cal(deviceType, param);
+      state.sensorCal[deviceType][param] = Object.assign(kini, patch || {});
+      save();
+      return state.sensorCal[deviceType][param];
+    },
+    /** Mengosongkan kalibrasi satu jenis perangkat, atau seluruhnya bila kosong. */
+    resetCal(deviceType) {
+      if (deviceType) delete (state.sensorCal || {})[deviceType];
+      else state.sensorCal = {};
+      save();
+    },
+    /** Benar bila ada satu saja parameter yang menyimpang dari netral. */
+    calAktif(deviceType) {
+      const per = (state.sensorCal || {})[deviceType] || {};
+      return Object.keys(per).some((k) => {
+        const c = per[k];
+        return c && c.on !== false && (c.gain !== 1 || c.offset !== 0);
+      });
+    },
+
+    /* ---------------- penandaan eskalasi ---------------- */
+    escalationsFor(patientId) {
+      return (state.escalations || [])
+        .filter((e) => e.patientId === patientId)
+        .sort((a, b) => (b.at || 0) - (a.at || 0));
+    },
+    addEscalation(patientId, by) {
+      if (!patientId) return null;
+      const e = { id: uid('esc'), patientId, at: Date.now(), by: by || null };
+      state.escalations = (state.escalations || []).concat([e]).slice(-200);
+      save();
+      return e;
+    },
+    removeEscalation(id) {
+      const n = (state.escalations || []).length;
+      state.escalations = (state.escalations || []).filter((e) => e.id !== id);
+      save();
+      return state.escalations.length !== n;
+    },
     notify(title, body, kind) {
       state.notifications.unshift({
         id: uid('n'), title, body, kind: kind || 'info', at: Date.now(), read: false

@@ -98,13 +98,17 @@
       exp: 11, rating: 4.8, reviews: 743, price: 75000, online: true, wait: '± 6 menit',
       hospital: 'RS Neuro Medika', color: '#075A85',
       about: 'Nyeri kepala, gangguan tidur, dan neuropati. Membantu membedakan keluhan saraf dari keluhan psikosomatis.' },
+    // `verified: false` menandai mitra yang masih menunggu verifikasi admin.
+    // Sebelumnya layar admin memakai potongan indeks `slice(6, 8)` dan lencana
+    // berangka literal `2`, sehingga keduanya lepas sinkron begitu katalog ini
+    // berubah.
     { id: 'd7', name: 'dr. Yusuf Ramadhan, Sp.P', spec: 'paru', sub: 'Pulmonologi',
       exp: 10, rating: 4.7, reviews: 512, price: 68000, online: false, wait: 'Kembali 16.30',
-      hospital: 'RS Paru Sehat', color: '#E09B12',
+      hospital: 'RS Paru Sehat', color: '#E09B12', verified: false,
       about: 'Sesak napas, asma, dan penurunan saturasi oksigen. Memakai tren SpO₂ malam sebagai bahan penilaian.' },
     { id: 'd8', name: 'dr. Ratna Wulandari, Sp.PD-KGer', spec: 'geriatri', sub: 'Geriatri',
       exp: 18, rating: 4.9, reviews: 398, price: 80000, online: true, wait: '± 4 menit',
-      hospital: 'RS Lansia Sejahtera', color: '#4A3BB8',
+      hospital: 'RS Lansia Sejahtera', color: '#4A3BB8', verified: false,
       about: 'Perawatan lansia dengan banyak penyakit penyerta, termasuk pemantauan jarak jauh di panti.' },
     { id: 'd9', name: 'dr. Adhitya Nugroho', spec: 'umum', sub: 'Kedokteran Okupasi',
       exp: 8, rating: 4.6, reviews: 921, price: 30000, online: true, wait: '± 2 menit',

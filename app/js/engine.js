@@ -15,6 +15,84 @@
   const D = TC.DATA;
 
   /* ============================================================
+     0. KALIBRASI SENSOR (alat pengembang)
+     ============================================================
+     Setiap sensor punya galat sistematisnya sendiri: termistor kulit
+     membaca lebih rendah daripada suhu inti, estimasi tekanan darah
+     dari gelombang nadi bergeser menurut orang dan letak pemakaian,
+     dan oksimeter murah cenderung melaporkan saturasi lebih tinggi.
+     Modul ini menyediakan koreksi linear per jenis perangkat:
+
+         nilai = mentah * gain + offset
+
+     lalu dijepit ke rentang yang masih mungkin secara fisiologis agar
+     kesalahan kalibrasi tidak menghasilkan angka mustahil.
+
+     Diterapkan HANYA pada nilai yang datang dari perangkat sungguhan
+     (`Vitals.ingest`). Nilai simulasi tidak dikalibrasi — mengoreksi
+     angka yang dibangkitkan sendiri tidak ada artinya.
+     ============================================================ */
+  const CAL_PARAMS = [
+    { id: 'hr',      label: 'Detak jantung',   unit: 'bpm',   min: 25,  max: 240, cap: 'hr' },
+    { id: 'hrv',     label: 'HRV (RMSSD)',     unit: 'ms',    min: 3,   max: 250, cap: 'hr' },
+    { id: 'spo2',    label: 'Saturasi oksigen', unit: '%',    min: 60,  max: 100, cap: 'spo2' },
+    { id: 'temp',    label: 'Suhu tubuh',      unit: '°C',    min: 28,  max: 44,  cap: 'temp' },
+    { id: 'sys',     label: 'Sistolik',        unit: 'mmHg',  min: 50,  max: 280, cap: 'bp' },
+    { id: 'dia',     label: 'Diastolik',       unit: 'mmHg',  min: 25,  max: 180, cap: 'bp' },
+    { id: 'glucose', label: 'Glukosa',         unit: 'mg/dL', min: 30,  max: 450, cap: 'glucose' }
+  ];
+
+  const Calib = {
+    PARAMS: CAL_PARAMS,
+
+    param(id) { return CAL_PARAMS.find((p) => p.id === id) || null; },
+
+    /** Parameter yang relevan untuk sebuah jenis perangkat, menurut caps-nya. */
+    paramsFor(deviceType) {
+      const t = D.deviceType(deviceType);
+      const caps = (t && t.caps) || [];
+      return CAL_PARAMS.filter((p) => caps.indexOf(p.cap) !== -1);
+    },
+
+    /** Menerapkan koreksi satu nilai. Mengembalikan angka, atau null bila tak sah. */
+    apply(param, mentah, deviceType) {
+      if (typeof mentah !== 'number' || !isFinite(mentah)) return null;
+      if (!deviceType || Store.state.sensorCalOn === false) return mentah;
+      const c = Store.cal(deviceType, param);
+      if (!c.on) return mentah;
+      const p = Calib.param(param);
+      const out = mentah * c.gain + c.offset;
+      if (!isFinite(out)) return mentah;
+      return p ? clamp(out, p.min, p.max) : out;
+    },
+
+    /** Menerapkan koreksi ke seluruh isi satu paket bacaan. */
+    applyAll(v, deviceType) {
+      const out = {};
+      Object.keys(v || {}).forEach((k) => {
+        const p = Calib.param(k);
+        out[k] = p ? Calib.apply(k, v[k], deviceType) : v[k];
+        if (out[k] == null) out[k] = v[k];
+      });
+      return out;
+    },
+
+    /**
+     * Menghitung gain dan offset dari dua pasang pengukuran:
+     * (mentah1 → acuan1) dan (mentah2 → acuan2). Inilah cara kalibrasi
+     * dua titik yang lazim dipakai di lapangan.
+     */
+    dariDuaTitik(m1, a1, m2, a2) {
+      if ([m1, a1, m2, a2].some((x) => typeof x !== 'number' || !isFinite(x))) return null;
+      if (m1 === m2) return null;                 // tanpa rentang, gain tak terhingga
+      const gain = (a2 - a1) / (m2 - m1);
+      const offset = a1 - gain * m1;
+      if (!isFinite(gain) || !isFinite(offset)) return null;
+      return { gain: Math.round(gain * 10000) / 10000, offset: Math.round(offset * 100) / 100 };
+    }
+  };
+
+  /* ============================================================
      1. VITALS — simulasi fisiologis berirama sirkadian
      ============================================================ */
   const Vitals = (function () {
@@ -24,7 +102,12 @@
       stress: 28, steps: 0, glucose: 92, hrv: 46,
       source: 'sim', updatedAt: Date.now()
     };
-    const hist = { hr: [], spo2: [], temp: [], sys: [], glucose: [] };
+    // `dia` ikut direkam supaya grafik tekanan darah menggambar diastolik yang
+    // sebenarnya. Sebelumnya riwayat ini tidak ada, dan grafiknya memalsukan
+    // garis diastolik dengan mengurangi sistolik sebesar angka bergerigi.
+    const hist = { hr: [], spo2: [], temp: [], sys: [], dia: [], glucose: [] };
+    // Bacaan mentah terakhir dari perangkat, sebelum kalibrasi diterapkan.
+    const raw = {};
     const subs = new Set();
     let timer = null;
 
@@ -68,6 +151,8 @@
         hist[k].push(state[k]);
         if (hist[k].length > HIST) hist[k].shift();
       });
+      // Diringkas ke agregat harian supaya tren 7 hari punya sumber sungguhan.
+      try { catatAgregat(false); } catch (e) { /* jangan hentikan denyut vital */ }
       subs.forEach((fn) => { try { fn(state); } catch (e) { /* abaikan */ } });
     }
 
@@ -86,14 +171,31 @@
        * `source` bernilai 'device', step() berhenti membangkitkan angka
        * sehingga nilai perangkat tidak tertimpa simulasi.
        */
-      ingest(v) {
+      ingest(v, deviceType) {
         state.source = 'device';
+        // Jenis perangkat menentukan profil kalibrasi yang dipakai. Bila
+        // pemanggil tidak menyebutkannya, dipakai perangkat aktif.
+        const jenis = deviceType ||
+          ((Store.activeDevice() || {}).type) || null;
+
+        // Nilai mentah disimpan apa adanya supaya layar kalibrasi dapat
+        // menunjukkan mentah dan hasil koreksi berdampingan.
+        state.rawSource = jenis;
+        const dikoreksi = Calib.applyAll(v, jenis);
+
         ['hr', 'spo2', 'temp', 'sys', 'dia', 'stress', 'glucose', 'hrv'].forEach((k) => {
-          if (typeof v[k] === 'number' && isFinite(v[k])) state[k] = v[k];
+          if (typeof v[k] === 'number' && isFinite(v[k])) {
+            raw[k] = v[k];
+            const nilai = dikoreksi[k];
+            state[k] = typeof nilai === 'number' && isFinite(nilai) ? nilai : v[k];
+          }
         });
         state.updatedAt = Date.now();
         subs.forEach((fn) => { try { fn(state); } catch (e) { /* abaikan */ } });
       },
+
+      /** Nilai mentah terakhir dari perangkat, sebelum kalibrasi. */
+      raw() { return Object.assign({}, raw); },
 
       /**
        * Kembali ke simulasi setelah perangkat sungguhan lepas. Tanpa ini
@@ -805,32 +907,114 @@
   })();
 
   /* ============================================================
-     6. TREN 7 HARI (dibangkitkan sekali, disimpan)
+     6. TREN 7 HARI — dihitung dari vital yang sungguh berjalan
+     ============================================================
+     Sebelumnya bagian ini membangkitkan angka acak (`rnd`/`rint`)
+     lalu membekukannya per tanggal, sehingga tren yang ditampilkan
+     pada layar Analisis sama sekali tidak berhubungan dengan apa
+     pun yang terjadi di perangkat. Kini setiap pembacaan diringkas
+     ke `Store.state.dailyVitals`, dan hari tanpa pemakaian benar-benar
+     tampil kosong alih-alih diisi angka karangan.
+
+     Tidur tidak ikut dihitung: tidak ada jalur yang mengukurnya.
+     TeleRing mencantumkan kemampuan 'sleep' pada katalog perangkat,
+     tetapi app/js/ble.js tidak pernah membacanya — jadi layar Analisis
+     menyatakan datanya belum tersedia, bukan menampilkan grafik palsu.
      ============================================================ */
-  function weekTrend() {
-    const s = Store.state;
-    if (!s._week || s._week.day !== new Date().getDate()) {
-      const days = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
-        days.push({
-          label: TC.DAYS[d.getDay()].slice(0, 3),
-          rhr: Math.round(62 + rnd(-4, 7)),
-          sleep: Math.round(clamp(rnd(5.2, 8.2) * 10) / 10 * 10) / 10,
-          stress: Math.round(clamp(24 + rnd(-8, 34), 8, 88)),
-          steps: rint(3200, 11800)
-        });
-      }
-      Store.update((st) => { st._week = { day: new Date().getDate(), days }; });
-    }
-    return s._week.days;
+
+  const AGG_JEDA_MS = 60000;   // seberapa sering agregat ditulis ke penyimpanan
+  let aggBerikut = 0;
+  let langkahTerakhir = 0;
+
+  function kunciHari(t) {
+    const d = new Date(t);
+    return d.getFullYear() + '-' + TC.pad2(d.getMonth() + 1) + '-' + TC.pad2(d.getDate());
   }
+
+  /**
+   * Meringkas keadaan vital saat ini ke agregat hari ini.
+   * Ditulis berkala, bukan setiap pembacaan, supaya tidak menyentuh
+   * localStorage tiap dua detik.
+   */
+  function catatAgregat(paksa) {
+    const now = Date.now();
+    if (!paksa && now < aggBerikut) return;
+    aggBerikut = now + AGG_JEDA_MS;
+
+    const k = kunciHari(now);
+    const hr = Vitals.state.hr;
+    const spo2 = Vitals.state.spo2;
+    const stres = Vitals.state.stress;
+    // Langkah bersifat menumpuk sejak aplikasi dibuka; yang dicatat adalah
+    // pertambahannya, supaya angka harian tidak ikut ter-reset saat memuat ulang.
+    const langkah = Vitals.state.steps;
+    const delta = Math.max(0, langkah - langkahTerakhir);
+    langkahTerakhir = langkah;
+
+    Store.update((s) => {
+      if (!s.dailyVitals) s.dailyVitals = {};
+      const r = s.dailyVitals[k] || {
+        n: 0, hrSum: 0, hrMin: null, stressSum: 0, spo2Min: null, steps: 0, sumber: 'sim'
+      };
+      r.n += 1;
+      r.hrSum += hr;
+      r.hrMin = r.hrMin == null ? hr : Math.min(r.hrMin, hr);
+      r.stressSum += stres;
+      r.spo2Min = r.spo2Min == null ? spo2 : Math.min(r.spo2Min, spo2);
+      r.steps += delta;
+      // Sekali saja sebuah hari memuat data sensor, hari itu ditandai 'device'.
+      if (Vitals.state.source === 'device') r.sumber = 'device';
+      s.dailyVitals[k] = r;
+
+      // Simpan 30 hari terakhir saja.
+      const kunci = Object.keys(s.dailyVitals).sort();
+      if (kunci.length > 30) {
+        kunci.slice(0, kunci.length - 30).forEach((x) => { delete s.dailyVitals[x]; });
+      }
+    });
+  }
+
+  /**
+   * Tujuh hari terakhir. Hari tanpa pemakaian mengembalikan null pada
+   * ukurannya, dan `ada: false` — pemanggil wajib menanganinya, bukan
+   * menggantinya dengan angka.
+   */
+  function weekTrend() {
+    const dv = Store.state.dailyVitals || {};
+    const out = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const r = dv[kunciHari(d.getTime())];
+      const ada = !!(r && r.n);
+      out.push({
+        label: TC.DAYS[d.getDay()].slice(0, 3),
+        ada,
+        // Detak jantung istirahat didekati dengan nilai terendah hari itu.
+        rhr: ada ? Math.round(r.hrMin) : null,
+        stress: ada ? Math.round(r.stressSum / r.n) : null,
+        spo2: ada && r.spo2Min != null ? Math.round(r.spo2Min) : null,
+        steps: r ? Math.round(r.steps) : 0,
+        sumber: r ? r.sumber : null
+      });
+    }
+    return out;
+  }
+
+  // Agregat hari ini ikut ditulis saat tab ditinggalkan, supaya pembacaan
+  // sejak penulisan terakhir tidak hilang.
+  window.addEventListener('pagehide', () => {
+    try { catatAgregat(true); } catch (e) { /* abaikan */ }
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { try { catatAgregat(true); } catch (e) { /* abaikan */ } }
+  });
 
   TC.Vitals = Vitals;
   TC.Devices = Devices;
   TC.Meals = Meals;
   TC.Consult = Consult;
   TC.Notes = Notes;
+  TC.Calib = Calib;
   TC.EcgRenderer = EcgRenderer;
   TC.ecgAt = ecgAt;
   TC.weekTrend = weekTrend;
