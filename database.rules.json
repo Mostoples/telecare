@@ -14,11 +14,9 @@
 
         "consults": {
           "$consultId": {
-            ".read": "auth != null && (!data.exists() || data.child('meta/members').hasChild(auth.uid))",
+            ".read": "auth != null && data.child('meta/members').hasChild(auth.uid)",
 
             "meta": {
-              ".write": "auth != null && (!data.exists() || root.child('telecare/demo/consults/' + $consultId + '/meta/members').hasChild(auth.uid))",
-
               "members": {
                 "$uid": {
                   ".write": "auth != null && $uid == auth.uid",
@@ -27,18 +25,23 @@
               },
 
               "doctorId": {
+                ".write": "auth != null && root.child('telecare/demo/consults/' + $consultId + '/meta/members').hasChild(auth.uid)",
                 ".validate": "newData.isString() && newData.val().length <= 40"
               },
               "mode": {
+                ".write": "auth != null && root.child('telecare/demo/consults/' + $consultId + '/meta/members').hasChild(auth.uid)",
                 ".validate": "newData.val() == 'chat' || newData.val() == 'video' || newData.val() == 'audio'"
               },
               "status": {
+                ".write": "auth != null && root.child('telecare/demo/consults/' + $consultId + '/meta/members').hasChild(auth.uid)",
                 ".validate": "newData.val() == 'active' || newData.val() == 'done'"
               },
               "startedAt": {
+                ".write": "auth != null && root.child('telecare/demo/consults/' + $consultId + '/meta/members').hasChild(auth.uid)",
                 ".validate": "newData.isNumber()"
               },
               "doctorOnline": {
+                ".write": "auth != null && root.child('telecare/demo/consults/' + $consultId + '/meta/members').hasChild(auth.uid)",
                 ".validate": "newData.isBoolean()"
               },
               "$other": {

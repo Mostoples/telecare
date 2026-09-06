@@ -113,8 +113,12 @@
       const fb = TC.FB;
       if (!fb || !fb.settled) {
         el.innerHTML = `<span class="chip">${icon('sync')} Menghubungkan ke server…</span>`;
-      } else if (fb.online) {
+      } else if (fb.canSync && fb.canSync()) {
         el.innerHTML = `<span class="chip chip--g"><i class="dotlive"></i> Pesan &amp; panggilan tersambung ke server</span>`;
+      } else if (fb.authFatal) {
+        // Tersambung tetapi tanpa sesi sah: aturan database menolak tulisan,
+        // jadi jangan mengaku tersinkron.
+        el.innerHTML = `<span class="chip chip--a">${icon('alert')} Sesi server belum aktif — pesan disimpan lokal</span>`;
       } else {
         el.innerHTML = `<span class="chip chip--a">${icon('alert')} Luring — pesan disimpan lokal, panggilan hanya pratinjau</span>`;
       }
@@ -414,6 +418,10 @@
       if (!FB || !FB.settled) { el.innerHTML = '<span style="color:var(--muted)">menghubungkan…</span>'; return; }
       if (!FB.online) {
         el.innerHTML = '<span style="color:var(--amber-700)">mode luring · pesan disimpan lokal</span>';
+        return;
+      }
+      if (!FB.canSync()) {
+        el.innerHTML = '<span style="color:var(--amber-700)">sesi server belum aktif · pesan disimpan lokal</span>';
         return;
       }
       el.innerHTML = asDoctor

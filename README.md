@@ -111,6 +111,11 @@ Tiga jalur, semuanya tersedia di layar masuk:
 | Google | Firebase Authentication, `signInWithPopup` dengan cadangan `signInWithRedirect` |
 | Tamu | Akun demo berisi riwayat contoh; peran dapat dipilih saat masuk |
 
+Terlepas dari jalur yang dipilih, aplikasi selalu memastikan ada sesi Firebase — anonim bila
+pengguna belum masuk — karena aturan database menolak setiap tulisan tanpa autentikasi. Bila
+sesi gagal terbentuk, aplikasi berkata jujur (*"sesi server belum aktif · pesan disimpan lokal"*)
+dan turun ke penyimpanan lokal, bukan diam-diam mengaku tersinkron.
+
 ### Peran
 
 Empat peran dengan navigasi dan layar masing-masing. Peran dapat diganti kapan saja lewat
@@ -169,10 +174,35 @@ STUN saja mungkin tidak cukup — pemakaian nyata memerlukan server TURN.
 
 ### Catatan keamanan
 
-`database.rules.json` membuka `telecare/demo/**` untuk baca-tulis tanpa autentikasi agar
-purwarupa dapat langsung dicoba, dengan pembatasan bentuk dan panjang data. **Ini tidak layak
-untuk data kesehatan sungguhan.** Sebelum dipakai di luar peragaan: aktifkan Authentication,
-ubah aturan menjadi `auth != null`, dan batasi akses per pengguna.
+Seluruh akses ke `telecare/demo/**` menuntut sesi Firebase yang sah. Pengguna yang belum masuk
+— termasuk mode Tamu dan tautan `?demo=` — otomatis mendapat **sesi anonim**, jadi alur peragaan
+tetap utuh tanpa membuka database ke publik.
+
+Akses percakapan dibatasi per peserta lewat `meta/members`:
+
+| Aturan | Akibatnya |
+| --- | --- |
+| Baca/tulis percakapan hanya bila `auth.uid` terdaftar di `meta/members` | Percakapan orang lain tidak terbaca |
+| `meta/members/$uid` hanya dapat ditulis bila `$uid == auth.uid` | Tidak bisa menambah atau mengeluarkan peserta lain |
+| Tidak ada izin tulis pada simpul `meta` itu sendiri, hanya pada tiap field | Daftar peserta tidak bisa ditimpa sekaligus |
+| `uid` pesan wajib sama dengan `auth.uid` | Pengirim tidak dapat dipalsukan |
+| Pesan tidak dapat ditimpa setelah tertulis | Riwayat percakapan tidak bisa diubah diam-diam |
+| Kunci di luar skema ditolak, teks dibatasi 2.000 karakter | Bentuk data terkendali |
+| Ruang WebRTC mewarisi keanggotaan konsultasi ber-ID sama | Sinyal panggilan tertutup bagi non-peserta |
+
+**Model kepercayaannya:** siapa pun yang memegang ID konsultasi boleh bergabung sebagai peserta.
+Ini konsekuensi dari fitur tautan undangan — dokter di perangkat lain harus dapat masuk tanpa
+didaftarkan lebih dulu. Karena ID itu berfungsi sebagai kunci akses, ID dibangkitkan dengan
+`crypto.getRandomValues` (± 128 bit), bukan `Math.random`.
+
+Pengecualian yang disengaja: `telecare/live` tetap dapat dibaca tanpa autentikasi karena
+dashboard pada landing page memakainya dan isinya telemetri peragaan tanpa data pribadi.
+Menulis ke sana tertutup untuk semua klien.
+
+**Yang masih kurang untuk data kesehatan sungguhan:** peran (`pasien`/`dokter`/`admin`) masih
+disimpan di `localStorage`, jadi aturan database tidak dapat membedakan dokter sungguhan dari
+pengguna biasa. Membatasi "hanya dokter terverifikasi yang boleh bergabung" memerlukan peran
+yang tersimpan di server, mis. lewat custom claims pada token.
 
 ## Deploy
 

@@ -5,7 +5,7 @@ selesai** — supaya siapa pun (termasuk sesi kerja berikutnya) bisa melanjutkan
 menebak-nebak. Untuk cara memakai dan menjalankan proyek, lihat [README.md](README.md);
 berkas ini khusus soal *progres* dan *alasan di balik keputusan*.
 
-**Diperbarui:** 6 September 2026
+**Diperbarui:** 7 September 2026
 
 ---
 
@@ -62,6 +62,7 @@ Legenda: ✅ selesai & terverifikasi · 🟡 berjalan, ada batasan · ⬜ belum 
 | Onboarding 2 slide | ✅ | SVG orisinil |
 | Daftar / masuk / lupa sandi | ✅ | Akun lokal di localStorage |
 | **Masuk dengan Google** | ✅ | Provider sudah aktif di proyek; popup + cadangan redirect |
+| **Sesi anonim otomatis** | ✅ | Provider Anonymous aktif; wajib sejak aturan menuntut `auth != null` |
 | **Masuk sebagai Tamu** | ✅ | Pilih peran dulu, lalu data contoh disiapkan |
 | **4 peran** | ✅ | pasien · dokter · admin-faskes · admin |
 | Hub perangkat AIoT | ✅ | 6 jenis perangkat, pindai, sinkron buffer, lupakan |
@@ -69,7 +70,7 @@ Legenda: ✅ selesai & terverifikasi · 🟡 berjalan, ada batasan · ⬜ belum 
 | Vital + EKG langsung | 🟡 | **Nilai disimulasikan** (sirkadian), bukan sensor nyata |
 | Sesi makan 4 titik | ✅ | Kamera → koreksi → kurva respons |
 | Analisis (vital/gizi/respons) | ✅ | |
-| **Chat via Firebase RTDB** | ✅ | Tersinkron antarperangkat, ada mirror lokal luring |
+| **Chat via Firebase RTDB** | ✅ | Tersinkron antarperangkat, ada mirror lokal luring; akses per peserta |
 | **Panggilan WebRTC** | 🟡 | Offer/answer/ICE terverifikasi; **belum ada TURN** |
 | Balasan dokter otomatis | 🟡 | Pola kata kunci; berhenti saat dokter nyata hadir |
 | Layar dokter (klinik) | ✅ | Antrean, pasien binaan, detail vital |
@@ -99,6 +100,13 @@ Urut dari yang paling awal.
    memakai WebRTC dengan signaling lewat RTDB.
 8. **Login Google, tamu, dan 4 peran.** Navigasi, rute, dan layar terpisah per peran;
    chat ikut sadar peran.
+9. **Git + angka Urgensi bersumber.** Repositori dimulai (branch `main`, `.gitignore`), dan angka
+   pada seksi Urgensi diganti data Riskesdas 2018 + WHO berikut daftar sitasi. Klaim "1×" yang
+   tidak dapat disumberkan dibuang, digantikan celah 34,1% (terukur) vs 8,4% (terdiagnosis) yang
+   justru menjadi bukti langsung premis TeleCare.
+10. **Pengetatan keamanan database.** Provider Anonymous diaktifkan, sesi wajib untuk setiap
+   tulisan, akses percakapan dibatasi per peserta, ID konsultasi jadi kriptografis. Diverifikasi
+   lewat 41 pemeriksaan aturan + 12 pemeriksaan jalur klien + sapuan 9 rute.
 
 ---
 
@@ -138,6 +146,36 @@ supaya alur empat titik pengukuran bisa dicoba utuh. Bisa dimatikan di Pengatura
 **Peran disimpan di `user.role`.** Rute dijaga lewat `opts.roles`; yang tidak berhak
 dialihkan ke beranda perannya sendiri. Tab bar dan sidebar dibangun dari `TABS_BY_ROLE`.
 
+**Sesi anonim, bukan identitas localStorage.** Sejak aturan menuntut `auth != null`, `FB.uid`
+diambil dari Firebase Auth saja. `FB.ensureAuth()` menunggu kabar pertama `onAuthStateChanged`
+lebih dulu — kalau langsung `signInAnonymously()`, sesi tersimpan yang sedang dipulihkan akan
+tertimpa sesi baru setiap kali halaman dimuat. Setelah keluar dari akun Google, `signOut()`
+sengaja membuat sesi anonim baru; tanpa itu aplikasi kehilangan hak tulis.
+
+**Keanggotaan percakapan di `meta/members`, dan izin tulis TIDAK dipasang di `meta`.**
+Ini yang paling mudah salah: di Firebase, izin tulis **menurun ke seluruh anak** dan aturan yang
+lebih dalam tidak dapat menariknya kembali. Waktu `.write` masih dipasang di `meta`, setiap
+peserta bisa menulis `meta/members/<siapa pun>` — menambah maupun mengeluarkan orang lain —
+walau `members/$uid` sudah dibatasi `$uid == auth.uid`. Karena itu izin tulis dipindah ke
+masing-masing field (`doctorId`, `mode`, `status`, `startedAt`, `doctorOnline`), sehingga
+`members/$uid` menjadi satu-satunya jalan menuju daftar peserta.
+
+**`Chat.ensure` memakai `update()`, bukan `set()`/`transaction()`.** Konsekuensi keputusan di
+atas: tidak ada izin tulis pada simpul `meta`, jadi menulis seluruh objek akan ditolak.
+`update()` dinilai per-anak sehingga tetap sah, dan `members` tidak tersentuh. Sudah diverifikasi
+langsung lewat REST `PATCH`.
+
+**`Chat.join` ter-memo dan menjadi prasyarat setiap operasi.** `send`, `subscribe`, `meta`,
+`presence`, `watchPresence`, dan `RTC.join` semuanya menunggu `join` selesai. Tanpa itu pesan
+pertama pada percakapan baru bisa ditulis sebelum keanggotaan terdaftar, lalu ditolak aturan.
+
+**ID konsultasi kriptografis.** ID itu sekaligus ID ruang panggilan dan dibagikan lewat tautan
+undangan, jadi ia adalah kunci akses. `uid()` lama hanya 7 karakter `Math.random` (± 7,8×10¹⁰);
+`secureId()` memakai `crypto.getRandomValues` (± 128 bit).
+
+**`FB.canSync()` memisahkan "tersambung" dari "boleh menulis".** Sesi yang gagal tidak membuat
+`FB.online` menjadi false, sehingga UI sempat mengaku tersinkron padahal setiap tulisan ditolak.
+
 ---
 
 ## 5. Bug yang pernah ditemukan (jangan terulang)
@@ -155,6 +193,9 @@ Ditulis karena beberapa di antaranya tidak terlihat sampai benar-benar diuji.
 | **Tautan undangan tidak sampai** | `?demo=1` menyemai akun lalu **membajak rute** ke `/home` | `seedDemoUser(false)` — rute pada URL dipertahankan |
 | Listener sheet menumpuk | `#overlay` dipakai ulang, listener tidak pernah dilepas | Simpul overlay diganti baru setiap kali dibuka |
 | Padding bawah nyangkut di desktop | Inline `--tabbar-h` menimpa media query | Diganti kelas `body.is-bare` |
+| **Peserta bisa menambah/mengeluarkan peserta lain** | `.write` di `meta` menurun ke `meta/members`; aturan `$uid == auth.uid` yang lebih dalam tidak dapat menarik izin itu | Izin tulis dipindah ke tiap field meta; `meta` sendiri tanpa `.write` |
+| UI mengaku "tersambung" padahal tulisan ditolak | Sesi gagal tidak mengubah `FB.online` | `FB.canSync()` = tersambung **dan** bersesi |
+| Pesan pertama ditolak pada percakapan baru | `send` hanya menunggu sesi, bukan keanggotaan | `Chat.join` ter-memo jadi prasyarat `send`/`subscribe` |
 
 ---
 
@@ -163,9 +204,21 @@ Ditulis karena beberapa di antaranya tidak terlihat sampai benar-benar diuji.
 Supaya klaim "sudah jalan" bisa diperiksa ulang:
 
 - **Sapuan rute.** Chrome headless `--dump-dom` ke tiap rute, dicari string `Terjadi kesalahan`
-  (penanda layar gagal). Dijalankan untuk keempat peran.
-- **Aturan RTDB.** `curl` REST API: tulis pesan sah → berhasil; tulis di luar `telecare/demo` →
-  ditolak; teks 2.100 karakter → ditolak; `from` tidak sah → ditolak.
+  (penanda layar gagal) dan DOM yang terlalu pendek. Dijalankan untuk keempat peran; 9 rute
+  produksi bersih setelah pengetatan keamanan.
+- **Aturan RTDB (41 pemeriksaan, semua sesuai harapan).** Dua sesi anonim sungguhan dibuat lewat
+  REST Identity Toolkit, lalu izin diuji pada REST Realtime Database: tanpa auth semua ditolak
+  (401); tulis di luar `telecare/demo` ditolak; bukan-peserta tidak dapat membaca percakapan,
+  daftar pesan, maupun ruang panggilan; peserta tidak dapat menambah, menonaktifkan, atau
+  membuang keanggotaan orang lain, dan tidak dapat menimpa `meta` atau `meta/members` sekaligus;
+  `uid` palsu, teks 2.100 karakter, `from` tidak sah, kunci asing, dan penimpaan pesan ditolak;
+  `update()` multi-field pada `meta` (jalur `Chat.ensure`) diizinkan, tetapi ditolak bila
+  diselipkan anggota lain; peserta boleh keluar sendiri. Data uji dibersihkan setelahnya.
+- **Jalur klien sungguhan (12 pemeriksaan).** Halaman uji memuat `core.js` + `firebase.js` yang
+  ter-deploy lalu menjalankan `ensureAuth` → `join` → `ensure` → `send` → `subscribe` memakai SDK
+  Firebase asli: sesi anonim terbentuk, `canSync` benar, pesan terkirim dan diterima kembali oleh
+  listener, pesan 2.100 karakter ditolak server, ID tak dikenal mengembalikan `null`.
+  Diperlukan karena REST tidak menguji semantik `update()`/antrean luring milik SDK.
 - **Handshake WebRTC.** Dua Chrome headless dengan `--use-fake-device-for-media-stream`
   bergabung ke ruang yang sama; DB diperiksa: `offer` + `answer` tertulis, 14 dan 7 kandidat ICE
   dipertukarkan.
@@ -173,6 +226,9 @@ Supaya klaim "sudah jalan" bisa diperiksa ulang:
   token dummy → balasan `INVALID_IDP_RESPONSE` (bukan `OPERATION_NOT_ALLOWED`), artinya
   provider aktif. Domain terizinkan: `localhost`, `telecare-id.firebaseapp.com`,
   `telecare-id.web.app`.
+- **Provider Anonymous.** `POST .../v1/accounts:signUp` dengan `returnSecureToken` → mengembalikan
+  `idToken`. Sebelum diaktifkan, balasannya `ADMIN_ONLY_OPERATION`; itu penanda cepat kalau
+  provider mati dan seluruh sinkronisasi ikut berhenti.
 - **Tangkapan layar.** Render 390 px lewat iframe (lebar jendela headless punya batas minimum,
   jadi tangkapan langsung pada 390 px memotong isi — itu artefak, bukan bug tata letak).
 
@@ -182,11 +238,12 @@ Supaya klaim "sudah jalan" bisa diperiksa ulang:
 
 Urut dari yang paling perlu diselesaikan.
 
-1. **⚠️ Aturan database masih terbuka.** `telecare/demo/**` bisa dibaca-tulis **tanpa
-   autentikasi** (dibatasi bentuk & panjang data). Layak untuk peragaan, **tidak layak untuk
-   data kesehatan sungguhan.** Sebelum dipakai di luar demo: aktifkan Authentication, ubah
-   aturan jadi `auth != null`, batasi akses per pengguna.
-   → [database.rules.json](database.rules.json)
+1. ~~**Aturan database masih terbuka.**~~ **Selesai.** `telecare/demo/**` kini menuntut
+   `auth != null`; percakapan dibatasi per peserta lewat `meta/members`; `uid` pesan wajib
+   sama dengan `auth.uid`; pesan tidak dapat ditimpa. Sesi anonim otomatis menjaga alur Tamu
+   dan `?demo=` tetap jalan. Sisa yang belum: peran masih di `localStorage`, jadi aturan tidak
+   dapat membedakan dokter sungguhan — lihat butir 9.
+   → [database.rules.json](database.rules.json), [app/js/firebase.js](app/js/firebase.js)
 2. ~~**Angka pada seksi Urgensi belum bersumber.**~~ **Selesai.** Kini memakai Riskesdas 2018
    (34,1% prevalensi hasil pengukuran; 8,4% berdasarkan diagnosis nakes) dan WHO (PTM ± tiga
    perempat kematian), dengan daftar sumber `#sumber-urgensi` di bawah kartu statistik.
@@ -202,6 +259,13 @@ Urut dari yang paling perlu diselesaikan.
 7. **Data pasien/faskes bersifat contoh.** `PATIENTS` dan `FACILITIES` di
    [app/js/data.js](app/js/data.js) adalah ilustrasi, bukan rekam medis.
 8. **Belum ada uji otomatis.** Verifikasi selama ini manual lewat skrip headless sekali jalan.
+9. **Peran belum tepercaya di sisi server.** `user.role` disimpan di `localStorage` dan dapat
+   diubah pengguna. Aturan database hanya tahu "peserta percakapan", tidak tahu siapa dokter.
+   Untuk membatasi berdasarkan peran, peran harus ikut di token (custom claims) — perlu Admin SDK.
+10. **Model akses percakapan bersifat kapabilitas.** Siapa pun bersesi yang memegang ID
+   konsultasi boleh bergabung. Ini tuntutan fitur tautan undangan; pengamanannya ada pada ID
+   128-bit dari `crypto.getRandomValues` ([app/js/core.js](app/js/core.js) `secureId`).
+   Percakapan lama berpengenal `uid()` (7 karakter) masih ada di database dan lebih lemah.
 
 ---
 
@@ -210,7 +274,8 @@ Urut dari yang paling perlu diselesaikan.
 Belum dikerjakan, tinggal pilih:
 
 - [x] `git init` + commit awal, lalu commit per perubahan
-- [ ] Perketat aturan RTDB + aktifkan Firebase Authentication penuh
+- [x] Perketat aturan RTDB + aktifkan Firebase Authentication penuh
+- [ ] Peran tepercaya di server (custom claims) agar aturan bisa membedakan dokter
 - [x] Ganti angka Urgensi dengan data bersumber + sitasi
 - [ ] Tambah TURN server (coturn sendiri atau layanan pihak ketiga)
 - [ ] Baca karakteristik GATT nyata dari perangkat BLE (Heart Rate Service `0x180D`)

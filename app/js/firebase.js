@@ -119,7 +119,7 @@
         if (cur) return cur;
         return firebase.auth().signInAnonymously().then((res) => res.user);
       })
-      .then((user) => { FB.authFatal = null; return user; })
+      .then((user) => { FB.authFatal = null; emit(); return user; })
       .catch((err) => {
         FB._authOnce = null;               // biar percobaan berikutnya bisa jalan
         const code = (err && err.code) || '';
@@ -135,6 +135,15 @@
       });
 
     return FB._authOnce;
+  };
+
+  /**
+   * Benar hanya bila data sungguh dapat disinkronkan: tersambung **dan**
+   * bersesi sah. Tanpa pemeriksaan sesi, aplikasi bisa mengaku "tersambung"
+   * padahal setiap tulisan ditolak aturan database.
+   */
+  FB.canSync = function () {
+    return !!(FB.ready && FB.online && FB.uid && !FB.authFatal);
   };
 
   /**
@@ -277,23 +286,32 @@
       delete Chat._joined[FB.uid + '@' + consultId];
     },
 
-    /** Menuliskan metadata percakapan bila belum ada. */
+    /**
+     * Menuliskan metadata percakapan bila belum ada.
+     *
+     * Memakai `update()` dan bukan `set()`/`transaction()` pada simpul `meta`
+     * secara sengaja: aturan database tidak memberi izin tulis pada `meta`
+     * itu sendiri, hanya pada masing-masing field. Sebabnya izin tulis di
+     * Firebase menurun ke seluruh anak — izin di `meta` akan membuat siapa pun
+     * peserta bisa mengubah daftar `members`, termasuk menambah atau membuang
+     * orang lain. `update()` dinilai per-anak, jadi tetap sah, dan `members`
+     * sama sekali tidak tersentuh.
+     */
     ensure(consultId, meta) {
       return Chat.join(consultId).then(() => {
         const r = FB.ref('consults/' + consultId + '/meta');
         if (!r) return false;
-        // `join` sudah membuat simpul meta (berisi members), jadi kondisi
-        // "belum ada" diuji lewat doctorId, bukan lewat ada/tidaknya meta.
-        // Object.assign menjaga members yang sudah tertulis.
-        return r.transaction((cur) => {
-          if (cur && cur.doctorId) return cur;
-          return Object.assign({}, cur, {
+        // doctorId menjadi penanda "percakapan sudah disiapkan", sebab `join`
+        // sudah lebih dulu membuat simpul meta berisi members.
+        return r.child('doctorId').get().then((s) => {
+          if (s.exists()) return true;
+          return r.update({
             doctorId: meta.doctorId,
             mode: meta.mode || 'chat',
             startedAt: meta.startedAt || Date.now(),
             status: 'active'
-          });
-        }).then(() => true);
+          }).then(() => true);
+        });
       }).catch((e) => {
         console.warn('[TeleCare] gagal menyiapkan percakapan:', e.message);
         return false;
