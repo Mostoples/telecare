@@ -93,7 +93,14 @@ function Ambil-Dom {
   }
 }
 
-<# Menangkap layar halaman ke berkas PNG. #>
+<#
+  Menangkap layar halaman ke berkas PNG.
+
+  Sama seperti Ambil-Dom: prosesnya dijalankan sendiri lalu dihentikan lewat
+  PID-nya bila melewati batas waktu. Halaman TeleCare punya timer yang tak
+  pernah berhenti (EKG, denyut vital), jadi menunggu prosesnya keluar sendiri
+  tidak bisa diandalkan.
+#>
 function Ambil-Layar {
   param(
     [Parameter(Mandatory)][string]$Url,
@@ -101,16 +108,35 @@ function Ambil-Layar {
     [int]$Lebar = 1280,
     [int]$Tinggi = 860,
     [int]$DurasiMs = 6000,
-    [string]$Label = 'shot'
+    [string]$Label = 'shot',
+    [string[]]$FlagTambahan = @(),
+    [int]$BatasDetik = 0
   )
+  if ($BatasDetik -le 0) { $BatasDetik = [int]($DurasiMs / 1000) + 12 }
   $prof = New-ProfilSementara -Label $Label
+  Remove-Item $Keluaran -Force -ErrorAction SilentlyContinue
   try {
-    $flag = (Get-FlagDasar $prof) + @(
+    # --disable-sync membuat Edge di mesin ini keluar tanpa pernah menulis
+    # berkas PNG (terbukti lewat bisect flag), jadi khusus tangkapan layar
+    # flag itu dibuang. Untuk --dump-dom flag tersebut tetap aman.
+    $flag = ((Get-FlagDasar $prof) | Where-Object { $_ -ne '--disable-sync' }) + @(
       "--window-size=$Lebar,$Tinggi",
+      "--hide-scrollbars",
+      "--force-device-scale-factor=1",
       "--virtual-time-budget=$DurasiMs",
       "--screenshot=$Keluaran"
-    )
-    & $script:PeramabanUji @flag $Url 2>$null | Out-Null
+    ) + $FlagTambahan
+    # RedirectStandardOutput dan RedirectStandardError tidak boleh menunjuk
+    # berkas yang sama, jadi dua berkas buangan terpisah.
+    $bo = Join-Path $env:TEMP ('tc-shot-o-' + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.txt')
+    $be = Join-Path $env:TEMP ('tc-shot-e-' + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.txt')
+    $p = Start-Process -FilePath $script:PeramabanUji -ArgumentList ($flag + @($Url)) `
+                       -RedirectStandardOutput $bo -RedirectStandardError $be -PassThru
+    if (-not $p.WaitForExit($BatasDetik * 1000)) {
+      taskkill /PID $p.Id /T /F 2>$null | Out-Null
+      Start-Sleep -Milliseconds 600
+    }
+    Remove-Item $bo, $be -Force -ErrorAction SilentlyContinue
     return (Test-Path $Keluaran)
   } finally {
     Remove-Item $prof -Recurse -Force -ErrorAction SilentlyContinue

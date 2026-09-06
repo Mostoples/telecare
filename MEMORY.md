@@ -115,6 +115,22 @@ Urut dari yang paling awal.
 10. **Pengetatan keamanan database.** Provider Anonymous diaktifkan, sesi wajib untuk setiap
    tulisan, akses percakapan dibatasi per peserta, ID konsultasi jadi kriptografis. Diverifikasi
    lewat 41 pemeriksaan aturan + 12 pemeriksaan jalur klien + sapuan 9 rute.
+12. **Dering panggilan masuk.** Node `duty`/`inbox`/`push` di RTDB, `ring.js` + `ring-ui.js`,
+   dering dan lapisan panggilan di perangkat dokter. Kotak masuk dikunci per Firebase uid
+   (`inbox/$uid`), bukan per `doctorId`, karena aturan tidak bisa memverifikasi peran.
+13. **Audit "dummy" menyeluruh.** Sembilan perbaikan: tabrakan selektor `data-tab` di layar
+   Analisis, riwayat diastolik yang benar-benar direkam, subjudul asal data dan label irama EKG
+   yang jujur, verifikasi dokter dan penandaan eskalasi yang tersimpan, angka inventaris
+   perangkat yang stabil, tren 7 hari dari agregat harian nyata, penjaga peran pada rute milik
+   pasien, label kejujuran pada layar pengelola, dan tombol mati yang dihapus atau diberi
+   fungsi nyata (`data-report` sekarang menghasilkan CSV).
+14. **Kalibrasi sensor untuk pengembang.** `#/sistem/kalibrasi`, khusus peran admin platform.
+   `nilai = mentah * gain + offset` per jenis perangkat dan per parameter, dijepit ke rentang
+   fisiologis, plus penghitung dua titik. Diterapkan hanya pada `Vitals.ingest()`.
+15. **Dua video showcase.** `assets/video/telecare-promo.mp4` (69 detik) dan
+   `telecare-tutorial.mp4` (2 menit 41 detik), dibangun dari 39 tangkapan layar lewat
+   `tools/tangkap-layar.ps1` + `tools/bangun-video.ps1`, ditambah dua draft CapCut lewat
+   `tools/bangun-capcut.ps1`.
 
 ---
 
@@ -208,6 +224,17 @@ Ditulis karena beberapa di antaranya tidak terlihat sampai benar-benar diuji.
 | Papan jaga usang membuat pasien mendering perangkat yang sudah mati | `onDisconnect` tidak menolong bila proses mati mendadak | Denyut nadi memperbarui `at` tiap 60 detik; `cekJaga` menolak entri yang lebih tua dari 3 menit |
 | Judul tab baru berubah setelah 900 ms saat panggilan masuk | Penggantian judul hanya di dalam `setInterval` | Judul diganti seketika lalu baru berkedip |
 | Catatan klinis pada milidetik sama tampil terbalik | `at` identik → sort seri → urutan bergantung kestabilan sort, yang menampilkan terlama di atas | Indeks penyisipan dipakai sebagai pemecah seri di `Notes.list` dan `Consult.forPatient` |
+| Komentar HTML muncul sebagai teks di layar | Komentar `<!-- -->` ditulis di dalam literal templat yang jadi `innerHTML`, jadi ikut terkirim ke DOM | Komentar dipindah keluar jadi komentar JS |
+| Puluhan proses Edge menumpuk saat pengujian | Halaman punya timer yang tidak pernah berhenti (EKG, denyut vital), jadi `--virtual-time-budget` tidak pernah membuat proses keluar sendiri | `Ambil-Dom`/`Ambil-Layar` menunggu dengan batas waktu lalu `taskkill /PID /T /F` pada PID miliknya sendiri |
+| Tangkapan layar headless selalu kosong | `--disable-sync` membuat Edge di mesin ini keluar tanpa pernah menulis PNG (ditemukan lewat bisect flag) | Flag itu dibuang khusus untuk `--screenshot`; untuk `--dump-dom` tetap aman |
+| `Start-Process` menolak jalan | `RedirectStandardOutput` dan `RedirectStandardError` menunjuk berkas yang sama (`NUL`) | Dua berkas buangan terpisah |
+| ffmpeg menolak durasi `3,6` | Mesin ini berlokal Indonesia, jadi PowerShell mencetak desimal dengan koma | Skrip video memaksa `InvariantCulture` |
+| `xfade=transition=0,55` | Array `$TRANSISI` dan parameter `$Transisi` adalah **variabel yang sama** — PowerShell tidak peduli besar kecil huruf | Array diganti nama `$POLA` |
+| Filter ffmpeg kehilangan potongan | Dalam string PowerShell, `$d:sample_rate` dibaca sebagai variabel bercakupan dan `$AKSEN[panel]` sebagai pengindeksan array | Ditulis `$($d):` dan `${AKSEN}[panel]` |
+| `capcut` memanggil dirinya sampai tumpukan penuh | Fungsi pembantu bernama `Capcut` memanggil perintah `capcut`; nama sama karena PowerShell tidak peduli besar kecil huruf | Fungsi diganti nama `Panggil-Capcut` dan memanggil `node <index.js>` langsung |
+| Skrip CapCut menggantung tanpa pesan | `-q` di akhir pemanggilan fungsi dibaca PowerShell sebagai nama parameter, lalu menunggu masukan | Flag `-q` dihapus |
+| Skrip CapCut berhenti setelah `init` | `capcut` menulis petunjuk ke stderr meski berhasil, dan `ErrorActionPreference = 'Stop'` mengubahnya jadi galat yang menghentikan skrip | Preferensi dilonggarkan hanya selama pemanggilan, keberhasilan dinilai dari kode keluar |
+| Bantalan suara video praktis tak terdengar | Rantai `amix` + `volume=0.30` menghasilkan puncak -37 dB | `volume` diganti `loudnorm=I=-24:TP=-3` |
 
 ---
 
@@ -397,6 +424,13 @@ app/js/firebase.js                           chat RTDB + Google Sign-In + WebRTC
 app/manifest.webmanifest · app/sw.js         PWA: installable + luring
 app/assets/icons/                            ikon PWA (dibangun tools/build_icons.py)
 tools/build_icons.py · tools/serve.py        generator ikon & server lokal ber-MIME benar
+tools/uji-browser.ps1                        Edge headless: Ambil-Dom, Ambil-Layar, Jalankan-Latar
+tools/tangkap-layar.ps1                      tangkap 39 halaman x 2 ukuran ke build/shots
+tools/bangun-video.ps1                       rangkai dua video showcase dengan ffmpeg
+tools/bangun-capcut.ps1                      dua draft CapCut dari klip yang sama
+tools/cek-deploy.ps1                         bandingkan SHA256 lokal vs produksi
+assets/video/telecare-promo.mp4              video promosi 69 detik
+assets/video/telecare-tutorial.mp4           video tutorial 2 menit 41 detik
 app/js/views-auth.js                         onboarding, masuk, daftar, tamu, Google
 app/js/views-home.js                         beranda, vital, analisis, riwayat
 app/js/views-session.js                      kamera → koreksi → sesi → ringkasan
@@ -414,13 +448,22 @@ database.rules.json · firebase.json          aturan RTDB & konfigurasi hosting
 ## 10. Perintah yang sering dipakai
 
 ```bash
-# jalankan lokal (wajib lewat HTTP, bukan file://)
-python -m http.server 8899
+# jalankan lokal — pakai tools/serve.py, BUKAN python -m http.server:
+# di Windows MIME .js sering text/plain sehingga service worker ditolak
+python tools/serve.py 8950
 
 # bangun ulang aset 3D  (± 2–5 menit; --stills-only melewati video)
 "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b -noaudio \
   -P blender/build_assets.py -- --root "C:/Users/mosto/Desktop/telecare"
 
+# bangun ulang video showcase (server lokal harus hidup untuk tahap pertama)
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\tangkap-layar.ps1   # ± 12 menit
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\bangun-video.ps1    # ± 12 menit
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\bangun-capcut.ps1 -Bersihkan
+
 # deploy
 npx firebase-tools deploy --only database,hosting --project telecare-id
+
+# periksa berkas ter-deploy byte-identik dengan lokal
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\cek-deploy.ps1
 ```

@@ -33,6 +33,14 @@ assets/models/*.glb         model untuk viewer Three.js
 assets/video/*.mp4          render turntable
 assets/img/render-*.png     still transparan (+ varian .webp)
 assets/img/og-cover.png     kartu pratinjau media sosial 1200x630
+assets/video/telecare-promo.mp4     video promosi 69 detik
+assets/video/telecare-tutorial.mp4  video tutorial 2 menit 41 detik
+tools/serve.py              server lokal dengan MIME type yang benar
+tools/uji-browser.ps1       pembantu pengujian Edge headless (DOM + tangkapan layar)
+tools/tangkap-layar.ps1     tangkap 39 halaman x 2 ukuran ke build/shots
+tools/bangun-video.ps1      rangkai dua video showcase dengan ffmpeg
+tools/bangun-capcut.ps1     buat dua draft CapCut yang bisa disunting lanjut
+tools/cek-deploy.ps1        bandingkan sidik SHA256 berkas lokal dengan produksi
 ```
 
 ## Menjalankan secara lokal
@@ -77,6 +85,62 @@ python -c "from PIL import Image; import glob; [Image.open(f).save(f[:-4]+'.webp
 Catatan Blender 5.x yang ditangani skrip: output video berada di balik
 `image_settings.media_type = 'VIDEO'`, dan F-curve diakses lewat *slotted Action*
 (`action.layers[].strips[].channelbag`), bukan `action.fcurves`.
+
+## Membangun ulang video showcase
+
+Dua video ada di `assets/video/`:
+
+| berkas | panjang | isi |
+| --- | --- | --- |
+| `telecare-promo.mp4` | 1 menit 9 detik | sorotan cepat 24 halaman, kartu pembuka dan penutup, klip turntable produk |
+| `telecare-tutorial.mp4` | 2 menit 41 detik | 40 langkah bernomor, dipecah per peran, keterangan berisi tindakan yang harus dilakukan |
+
+Keduanya 1920x1080 pada 30 fps dan dibangun dalam tiga tahap yang bisa dijalankan ulang.
+
+**1. Tangkap setiap halaman.** Server lokal harus hidup dulu.
+
+```powershell
+python tools/serve.py 8950
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\tangkap-layar.ps1
+```
+
+Menghasilkan `build/shots/desktop/` (1920x1080) dan `build/shots/ponsel/` (440x900), 39 halaman
+masing-masing, plus `build/shots/daftar.json`. Prosesnya memakai Edge headless dengan profil
+sementara lewat `tools/uji-browser.ps1`, jadi profil peramban asli tidak tersentuh. Butuh sekitar
+12 menit.
+
+**2. Rangkai video dengan ffmpeg.**
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\bangun-video.ps1
+```
+
+Tiap halaman menjadi satu klip: panel tangkapan layar bertepi aksen di atas latar gelap bergaris
+(`gradients` + `drawgrid` + `vignette`), judul dan keterangan lewat `drawtext`, dorongan kamera
+lambat lewat `zoompan`. Klip disambung memakai `xfade` bertahap per rumpun tujuh klip supaya
+rangkaian filter tetap pendek. Tambahkan `-LewatiKlip` untuk memakai klip yang sudah ada di
+`build/video/klip`, dan `-Video promo` atau `-Video tutorial` untuk membangun salah satunya saja.
+
+Bantalan suara disintesis ffmpeg sendiri (empat nada dasar yang berdenyut lambat plus desir pink,
+dinormalkan ke -24 LUFS) karena proyek ini tidak punya aset musik berlisensi. Tingkatnya sengaja
+rendah supaya mudah ditimpa musik sungguhan.
+
+**3. Draft CapCut untuk dipoles (opsional).**
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\bangun-capcut.ps1 -Bersihkan
+```
+
+Membuat draft `TeleCare Promo` (27 klip) dan `TeleCare Tutorial` (46 klip) di
+`%LOCALAPPDATA%\CapCut\User Data\Projects\com.lveditor.draft`, memakai klip per-halaman yang sama.
+Buka CapCut, tambahkan musik atau sulih suara, ubah transisi, lalu Export.
+
+Catatan tentang capcut-cli: perintahnya **tidak** merender video final, hanya membuat dan
+menyunting draft — MP4 siap pakai tetap dibuat ffmpeg. Perintah `bundle` sengaja tidak dipakai
+karena sampai versi 0.17.2 perintah itu menuliskan `device_id`, `mac_address`, dan `hard_disk_id`
+ke dalam draft.
+
+Isi `build/` tidak dilacak Git; hanya dua MP4 hasil akhir yang masuk repositori.
 
 ## Data langsung (opsional)
 
@@ -177,6 +241,30 @@ seolah masih hidup. Beranda menandai asalnya: **dari perangkat** atau **simulasi
 
 Web Bluetooth hanya tersedia di peramban berbasis Chromium pada origin aman. Di Safari dan
 Firefox aplikasi tetap memakai daftar perangkat simulasi.
+
+### Kalibrasi sensor — alat pengembang di halaman admin
+
+`#/sistem/kalibrasi`, hanya untuk peran **admin platform**. Gunanya menyesuaikan pembacaan mentah
+sensor terhadap alat acuan, per **jenis perangkat** (TeleBand dan TeleRing punya setelan sendiri)
+dan per parameter: detak jantung, SpO₂, suhu, sistolik, diastolik.
+
+Modelnya sengaja dibuat paling sederhana yang masih berguna:
+
+```
+nilai = mentah * gain + offset
+```
+
+lalu dijepit ke rentang fisiologis parameter tersebut, sehingga salah setel tidak pernah
+menghasilkan angka yang mustahil. Bila tidak tahu gain dan offset-nya, isi **dua titik** —
+dua pasang nilai (mentah, acuan) — dan sistem menghitung sendiri garis lurus yang melewatinya.
+
+Kalibrasi ini **hanya diterapkan pada `Vitals.ingest()`**, yaitu jalur nilai dari sensor sungguhan.
+Angka simulasi tidak dikalibrasi karena tidak ada artinya mengoreksi angka yang dibangkitkan
+sendiri. `Vitals.raw()` tetap menyediakan nilai sebelum koreksi agar keduanya bisa dibandingkan.
+
+Ini berbeda dari **Profil → Kalibrasi** (`#/profil/kalibrasi`) yang dipakai pasien untuk
+membandingkan tekanan darah dari pergelangan tangan dengan tensimeter lengan. Audiensnya berbeda:
+yang satu koreksi satu orang, yang satu lagi karakterisasi model sensor.
 
 ### Panggilan masuk — perangkat dokter berdering
 

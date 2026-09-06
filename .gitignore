@@ -1,23 +1,21 @@
 # Backup & log Blender
 blender/*.blend1
 blender/build.log
-
 # Cache & artefak Firebase
 .firebase/
 *.log
-
+# Bahan antara video: tangkapan layar, klip, latar, bantalan suara.
+# Hasil akhirnya ada di assets/video dan itulah yang dilacak Git.
+build/
 # Dependensi (bila kelak dipakai)
 node_modules/
-
 # Berkas sistem
 Thumbs.db
 Desktop.ini
 .DS_Store
-
 # Editor
 .vscode/
 .idea/
-
 # Berkas lingkungan / rahasia
 .env
 .env.*
