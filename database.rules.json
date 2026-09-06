@@ -1,0 +1,96 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "telecare": {
+      "live": {
+        ".read": true,
+        ".write": false
+      },
+      "demo": {
+        "consults": {
+          "$consultId": {
+            ".read": true,
+            ".write": true,
+            "meta": {
+              ".validate": "newData.hasChildren(['doctorId'])",
+              "doctorId": {
+                ".validate": "newData.isString() && newData.val().length <= 40"
+              },
+              "mode": {
+                ".validate": "newData.val() == 'chat' || newData.val() == 'video' || newData.val() == 'audio'"
+              },
+              "status": {
+                ".validate": "newData.val() == 'active' || newData.val() == 'done'"
+              },
+              "startedAt": {
+                ".validate": "newData.isNumber()"
+              },
+              "$other": {
+                ".validate": false
+              },
+              "doctorOnline": {
+                ".validate": "newData.isBoolean()"
+              }
+            },
+            "messages": {
+              "$messageId": {
+                ".validate": "newData.hasChild('at')",
+                "text": {
+                  ".validate": "newData.isString() && newData.val().length <= 2000"
+                },
+                "from": {
+                  ".validate": "newData.val() == 'me' || newData.val() == 'doc' || newData.val() == 'sys'"
+                },
+                "at": {
+                  ".validate": "newData.isNumber()"
+                }
+              }
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "rooms": {
+          "$roomId": {
+            ".read": true,
+            ".write": true,
+            "offer": {
+              "sdp": {
+                ".validate": "newData.isString() && newData.val().length <= 30000"
+              },
+              "type": {
+                ".validate": "newData.val() == 'offer'"
+              }
+            },
+            "answer": {
+              "sdp": {
+                ".validate": "newData.isString() && newData.val().length <= 30000"
+              },
+              "type": {
+                ".validate": "newData.val() == 'answer'"
+              }
+            },
+            "createdAt": {
+              ".validate": "newData.isNumber()"
+            },
+            "callerCandidates": {
+              "$c": {
+                ".validate": "newData.hasChild('candidate') || newData.hasChild('sdpMid')"
+              }
+            },
+            "calleeCandidates": {
+              "$c": {
+                ".validate": "newData.hasChild('candidate') || newData.hasChild('sdpMid')"
+              }
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    }
+  }
+}
