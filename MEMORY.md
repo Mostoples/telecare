@@ -78,6 +78,7 @@ Legenda: ✅ selesai & terverifikasi · 🟡 berjalan, ada batasan · ⬜ belum 
 | Layar admin faskes | ✅ | Triase unit, inventaris, nakes |
 | Layar admin platform | ✅ | Statistik, verifikasi dokter, kelola pengguna |
 | Profil, kalibrasi TD, pengaturan | ✅ | Termasuk ekspor data JSON |
+| Notifikasi eskalasi | 🟡 | Ambang lokal + notifikasi sistem berfungsi; **push dari server belum** (butuh VAPID + backend) |
 
 ---
 
@@ -105,6 +106,11 @@ Urut dari yang paling awal.
    pada seksi Urgensi diganti data Riskesdas 2018 + WHO berikut daftar sitasi. Klaim "1×" yang
    tidak dapat disumberkan dibuang, digantikan celah 34,1% (terukur) vs 8,4% (terdiagnosis) yang
    justru menjadi bukti langsung premis TeleCare.
+11. **PWA, TURN, GATT, detail pasien, notifikasi.** Aplikasi jadi installable dan jalan luring;
+   dukungan TURN beserta diagnostik ICE; pembacaan karakteristik GATT sungguhan; riwayat
+   konsultasi dan catatan klinis pada halaman pasien; peringatan eskalasi dengan ambang di
+   perangkat. Tiga hal masih menunggu prasyarat di luar kode: server TURN, wearable BLE fisik,
+   dan VAPID key + backend pengirim FCM.
 10. **Pengetatan keamanan database.** Provider Anonymous diaktifkan, sesi wajib untuk setiap
    tulisan, akses percakapan dibatasi per peserta, ID konsultasi jadi kriptografis. Diverifikasi
    lewat 41 pemeriksaan aturan + 12 pemeriksaan jalur klien + sapuan 9 rute.
@@ -208,6 +214,12 @@ Supaya klaim "sudah jalan" bisa diperiksa ulang:
 - **Sapuan rute.** Chrome headless `--dump-dom` ke tiap rute, dicari string `Terjadi kesalahan`
   (penanda layar gagal) dan DOM yang terlalu pendek. Dijalankan untuk keempat peran; 9 rute
   produksi bersih setelah pengetatan keamanan.
+- **Ambang eskalasi (51 pemeriksaan) & muatan push (23 pemeriksaan).** Setiap ambang diuji pada
+  nilainya sendiri **dan** pada nilai tepat di batas, karena salah tanda perbandingan hanya
+  terlihat di sana. Jeda pengulangan diuji dengan cap waktu yang disuntikkan: ditahan sebelum
+  jeda, lolos tepat setelahnya, tetap lolos bila waspada memburuk jadi kritis, dan terpisah per
+  ukuran. Penguraian muatan push diuji untuk tiga bentuk kiriman FCM (`notification`,
+  `webpush.notification`, data-only), prioritas antar bentuk, nilai bawaan, dan masukan tak wajar.
 - **Catatan klinis & riwayat pasien (29 pemeriksaan).** Tambah, tolak isi kosong, pangkas spasi,
   batas 4.000 karakter, isolasi antar pasien, hapus, persistensi lewat `localStorage` dan terbaca
   kembali setelah `load()`, serta pengumpulan konsultasi per `patientId`. Uji urutan menemukan
@@ -307,7 +319,8 @@ Belum dikerjakan, tinggal pilih:
 - [ ] Uji pembacaan GATT dengan wearable BLE sungguhan
 
 - [x] Halaman detail pasien untuk dokter: riwayat konsultasi + catatan klinis tersimpan
-- [ ] Notifikasi push (FCM) untuk eskalasi kritis
+- [x] Notifikasi eskalasi lokal (ambang di perangkat + notifikasi sistem)
+- [ ] Push FCM sungguhan: perlu VAPID key dari Console + pengirim di sisi server
 - [ ] Uji otomatis sapuan rute agar regresi ketahuan lebih awal
 
 ---
@@ -327,6 +340,7 @@ app/js/data.js                               perangkat, dokter, makanan, PERAN, 
 app/js/engine.js                             simulasi vital, hub perangkat, sesi makan, konsultasi
 app/js/rtc-config.js                         server ICE/TURN (diisi pemilik proyek)
 app/js/ble.js                                pembacaan GATT + parser IEEE-11073
+app/js/push-config.js · app/js/push.js       ambang eskalasi, notifikasi, FCM
 app/js/firebase.js                           chat RTDB + Google Sign-In + WebRTC
 app/manifest.webmanifest · app/sw.js         PWA: installable + luring
 app/assets/icons/                            ikon PWA (dibangun tools/build_icons.py)

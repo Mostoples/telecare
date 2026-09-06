@@ -178,6 +178,70 @@ seolah masih hidup. Beranda menandai asalnya: **dari perangkat** atau **simulasi
 Web Bluetooth hanya tersedia di peramban berbasis Chromium pada origin aman. Di Safari dan
 Firefox aplikasi tetap memakai daftar perangkat simulasi.
 
+### Notifikasi eskalasi
+
+Ada dua hal berbeda yang mudah tertukar:
+
+| | Perlu server? | Keadaan |
+| --- | --- | --- |
+| **Notifikasi lokal** — ambang dinilai di perangkat dari vital yang masuk | tidak | ✅ berfungsi, cukup izin pengguna |
+| **Push dari server (FCM)** — pesan sampai walau aplikasi tertutup | ya | 🟡 sisi klien siap, prasyarat server belum ada |
+
+Ambang ada di `TC.Escalation` ([app/js/push.js](app/js/push.js)):
+
+| Ukuran | Waspada | Kritis |
+| --- | --- | --- |
+| Detak jantung | &gt;110 atau &lt;50 bpm | &gt;130 atau &lt;45 bpm |
+| SpO₂ | &lt;94% | &lt;90% |
+| Suhu | ≥37,8 °C | ≥39 °C atau ≤35 °C |
+| Tekanan darah | ≥140/90 mmHg | ≥180/120 atau sistol &lt;90 mmHg |
+
+> **Bukan alat kesehatan.** Ambang di atas adalah heuristik penyaring untuk purwarupa, bukan
+> kriteria diagnostik. Penetapan ambang sungguhan harus dilakukan klinisi dan disesuaikan per
+> pasien (usia, kondisi dasar, obat).
+
+Satu ukuran tidak diberitahukan ulang sebelum jeda berakhir (bawaan 10 menit), **kecuali**
+tingkatannya naik dari waspada menjadi kritis — kondisi yang memburuk tidak boleh tertahan hanya
+karena baru saja diberitahukan. Jeda dihitung terpisah per ukuran.
+
+Bila angka masih berasal dari simulasi, notifikasi menyebutkannya secara eksplisit. Peringatan
+"kritis" dari angka yang dibangkitkan sendiri akan menyesatkan kalau tidak ditandai.
+
+Pemantauan hanya berjalan untuk peran `pasien`; peran lain memantau orang lain, bukan dirinya.
+
+#### Mengaktifkan push dari server
+
+Dua prasyarat yang **tidak dapat disediakan dari sisi kode**:
+
+1. **VAPID key.** Firebase Console → Project settings → Cloud Messaging → Web Push certificates →
+   *Generate key pair*, lalu tempel kunci publiknya ke `vapidKey` di
+   [app/js/push-config.js](app/js/push-config.js). Tidak ada API publik untuk membuatnya —
+   sudah diperiksa, semua endpoint kandidat membalas 404.
+2. **Pengirim di sisi server.** Klien hanya dapat *menerima* push. Mengirimnya memerlukan
+   kredensial akun layanan lewat FCM HTTP v1 API, misalnya Cloud Functions:
+
+   ```js
+   // functions/index.js — perlu Firebase Functions + paket Blaze
+   const { onValueCreated } = require('firebase-functions/v2/database');
+   const { getMessaging } = require('firebase-admin/messaging');
+
+   exports.eskalasi = onValueCreated('/telecare/demo/alerts/{id}', async (event) => {
+     const a = event.data.val();
+     await getMessaging().send({
+       token: a.token,
+       notification: { title: 'Eskalasi ' + a.label, body: a.text },
+       data: { severity: a.severity, url: '/app/#/vital/' + a.metric }
+     });
+   });
+   ```
+
+Selama kedua prasyarat itu belum ada, aplikasi tetap berjalan penuh dengan notifikasi lokal;
+`Push.daftarFcm()` mengembalikan `null` dan bukan galat.
+
+Aplikasi memakai **satu** service worker untuk PWA sekaligus push, jadi tidak ada
+`firebase-messaging-sw.js` terpisah — registrasi diteruskan ke `getToken()` lewat
+`serviceWorkerRegistration`.
+
 ### Detail pasien untuk dokter
 
 `/klinik/pasien/:id` menampilkan vital, indeks stres, tren 7 hari, perangkat, **riwayat

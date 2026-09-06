@@ -15,7 +15,7 @@
    ============================================================ */
 'use strict';
 
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = `telecare-app-${VERSION}`;
 
 // Kerangka aplikasi. Urutan skrip mengikuti app/index.html.
@@ -30,6 +30,8 @@ const SHELL = [
   'js/firebase.js',
   'js/ble.js',
   'js/engine.js',
+  'js/push-config.js',
+  'js/push.js',
   'js/views-auth.js',
   'js/views-home.js',
   'js/views-session.js',
@@ -160,6 +162,69 @@ async function simpan(req, res) {
     await cache.put(req, res);
   } catch (e) { /* kuota penuh atau permintaan tak dapat disimpan */ }
 }
+
+/* ---------------- push dari server (FCM) ----------------
+   Ditangani sendiri, tanpa pustaka service worker FCM, supaya aplikasi
+   cukup memakai satu service worker. Bentuk muatan FCM berbeda-beda
+   menurut cara pengiriman, jadi ketiga bentuk yang lazim diperiksa.
+   ------------------------------------------------------- */
+/**
+ * Menyusun judul dan opsi notifikasi dari muatan push.
+ * Dipisahkan sebagai fungsi murni agar percabangannya dapat diuji tanpa
+ * mengirim push sungguhan.
+ */
+function bacaMuatanPush(p) {
+  const obj = p && typeof p === 'object' ? p : {};
+  const n = obj.notification || (obj.webpush && obj.webpush.notification) || {};
+  const d = obj.data || {};
+  const berat = (d.severity || n.severity) === 'crit';
+
+  return {
+    judul: n.title || d.title || 'TeleCare',
+    opsi: {
+      body: n.body || d.body || '',
+      icon: 'assets/icons/icon-192.png',
+      badge: 'assets/icons/icon-192.png',
+      lang: 'id',
+      tag: d.tag || n.tag || 'telecare-push',
+      renotify: berat,
+      requireInteraction: berat,
+      data: { url: d.url || d.click_action || n.click_action || '/app/' }
+    }
+  };
+}
+self.bacaMuatanPush = bacaMuatanPush;
+
+self.addEventListener('push', (event) => {
+  let p = {};
+  try {
+    p = event.data ? event.data.json() : {};
+  } catch (e) {
+    // Muatan bukan JSON; pakai apa adanya sebagai isi pesan.
+    p = { notification: { body: event.data ? event.data.text() : '' } };
+  }
+  const { judul, opsi } = bacaMuatanPush(p);
+  event.waitUntil(self.registration.showNotification(judul, opsi));
+});
+
+/* Mengetuk notifikasi memfokuskan tab yang sudah ada, bukan membuka
+   tab baru — kalau tidak, aplikasi bisa terbuka berkali-kali. */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const tujuan = (event.notification.data && event.notification.data.url) || '/app/';
+
+  event.waitUntil((async () => {
+    const daftar = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of daftar) {
+      if (c.url.indexOf('/app/') !== -1) {
+        await c.focus();
+        if ('navigate' in c) { try { await c.navigate(tujuan); } catch (e) { /* abaikan */ } }
+        return;
+      }
+    }
+    await self.clients.openWindow(tujuan);
+  })());
+});
 
 /* ---------------- pesan dari halaman ---------------- */
 self.addEventListener('message', (event) => {

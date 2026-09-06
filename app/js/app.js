@@ -260,6 +260,14 @@
     });
 
     registerServiceWorker();
+
+    // Pemantauan eskalasi hanya berguna bagi pasien; peran lain memantau
+    // orang lain, bukan dirinya sendiri.
+    if (TC.Push && Store.user() && Store.is('pasien')) {
+      TC.Push.mulaiPantau();
+      // Token FCM diperbarui bila izin sudah pernah diberikan sebelumnya.
+      if (TC.Push.permission() === 'granted') TC.Push.daftarFcm().catch(() => {});
+    }
   }
 
   /**

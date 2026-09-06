@@ -647,11 +647,29 @@
         </label>
         <label class="row">
           <span class="row__ico">${icon('bell')}</span>
-          <div style="min-width:0"><b>Notifikasi dalam aplikasi</b>
-            <small>Peringatan perangkat dan pengingat konsultasi.</small></div>
+          <div style="min-width:0"><b>Peringatan eskalasi</b>
+            <small>Vital yang menembus ambang, peringatan perangkat, dan pengingat konsultasi.</small></div>
           <input type="checkbox" id="tNotif" ${s.notif ? 'checked' : ''}
                  style="margin-left:auto;width:20px;height:20px;accent-color:var(--green-500)">
         </label>
+      </div>
+
+      <div class="section-title">${icon('bell')} Notifikasi perangkat</div>
+      <div class="card">
+        <p class="small" style="color:var(--ink-2)">Peringatan eskalasi dihitung di perangkat ini
+        dari nilai vital yang masuk, lalu ditampilkan sebagai notifikasi sistem — tetap muncul
+        walau aplikasi berada di latar belakang. Push dari server memerlukan konfigurasi tambahan.</p>
+
+        <div id="pushStatus" class="mt"></div>
+
+        <div class="duo mt">
+          <button class="btn btn--primary" data-push-ask>${icon('bell')} Izinkan notifikasi</button>
+          <button class="btn btn--ghost" data-push-test>${icon('sparkle')} Kirim uji</button>
+        </div>
+
+        <div class="note note--w mt2">${icon('alert')}
+          <div><b>Bukan alat kesehatan</b>Ambang peringatan adalah heuristik penyaring untuk
+          purwarupa, bukan kriteria diagnostik. Jangan dijadikan dasar keputusan medis.</div></div>
       </div>
 
       <div class="section-title">${icon('video')} Panggilan (TURN)</div>
@@ -712,6 +730,54 @@
     };
     $('#tNotif').onchange = (e) => {
       Store.update((st) => { st.settings.notif = e.target.checked; });
+      toast(e.target.checked ? 'Peringatan eskalasi aktif.' : 'Peringatan eskalasi dimatikan.');
+    };
+
+    /* ---------------- notifikasi perangkat ---------------- */
+    function gambarStatusPush() {
+      const el = $('#pushStatus');
+      if (!el || !TC.Push) return;
+      const st = TC.Push.status();
+      const kelas = !st.didukung || st.izin === 'denied' ? 'chip--a'
+                  : st.izin === 'granted' ? 'chip--g' : '';
+      const ik = st.izin === 'granted' ? `<i class="dotlive"></i>` : icon(st.izin === 'denied' ? 'alert' : 'info');
+      el.innerHTML = `<span class="chip ${kelas}">${ik} ${esc(st.ringkasan)}</span>`;
+
+      const ask = $('[data-push-ask]');
+      if (ask) {
+        const sudah = st.izin === 'granted';
+        ask.disabled = sudah || !st.didukung || st.izin === 'denied';
+        ask.innerHTML = sudah ? `${icon('check')} Sudah diizinkan`
+                              : `${icon('bell')} Izinkan notifikasi`;
+      }
+      const uji = $('[data-push-test]');
+      if (uji) uji.disabled = st.izin !== 'granted';
+    }
+    gambarStatusPush();
+
+    $('[data-push-ask]').onclick = async () => {
+      try {
+        const p = await TC.Push.request();
+        gambarStatusPush();
+        if (p === 'granted') {
+          toast('Notifikasi diizinkan.');
+          if (Store.is('pasien')) TC.Push.mulaiPantau();
+        } else if (p === 'denied') {
+          toast('Notifikasi diblokir. Ubah dari pengaturan peramban.', 'err');
+        }
+      } catch (e) {
+        toast(e.message || 'Notifikasi tidak tersedia.', 'err');
+      }
+    };
+
+    $('[data-push-test]').onclick = async () => {
+      // Memakai jalur yang sama dengan peringatan sungguhan, supaya yang
+      // diuji benar-benar mekanisme yang dipakai — bukan tiruannya.
+      const ok = await TC.Push.show('Uji notifikasi TeleCare', {
+        body: 'Bila ini terlihat, peringatan eskalasi akan sampai juga.',
+        tag: 'telecare-uji'
+      });
+      toast(ok ? 'Notifikasi uji dikirim.' : 'Notifikasi tidak dapat ditampilkan.', ok ? '' : 'err');
     };
 
     /* ---------------- TURN ---------------- */
