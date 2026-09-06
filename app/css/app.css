@@ -777,7 +777,8 @@ body.is-bare .toasts{bottom:20px}
 .call__docwrap.is-mini b{font-size:.85rem}
 .call__docwrap.is-mini small{font-size:.7rem}
 .call__docwrap.is-mini .call__timer{margin-top:6px;font-size:.75rem;padding:4px 10px}
-.call__docwrap.is-mini .call__state,.call__docwrap.is-mini #btnInvite{display:none}
+.call__docwrap.is-mini .call__state,.call__docwrap.is-mini #btnInvite,
+.call__docwrap.is-mini .callring{display:none}
 .call__state{
   margin-top:14px;font-size:.83rem;color:rgba(255,255,255,.6);
   max-width:32ch;margin-inline:auto;line-height:1.5;
