@@ -4,6 +4,9 @@
     "ignore": [
       "firebase.json",
       "**/.*",
+      "**/.*/**",
+      ".git/**",
+      ".firebase/**",
       "**/node_modules/**",
       "blender/**",
       "tools/**",

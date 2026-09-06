@@ -203,6 +203,7 @@ Ditulis karena beberapa di antaranya tidak terlihat sampai benar-benar diuji.
 | **Peserta bisa menambah/mengeluarkan peserta lain** | `.write` di `meta` menurun ke `meta/members`; aturan `$uid == auth.uid` yang lebih dalam tidak dapat menarik izin itu | Izin tulis dipindah ke tiap field meta; `meta` sendiri tanpa `.write` |
 | UI mengaku "tersambung" padahal tulisan ditolak | Sesi gagal tidak mengubah `FB.online` | `FB.canSync()` = tersambung **dan** bersesi |
 | Pesan pertama ditolak pada percakapan baru | `send` hanya menunggu sesi, bukan keanggotaan | `Chat.join` ter-memo jadi prasyarat `send`/`subscribe` |
+| **Seluruh direktori `.git` tersaji publik di Hosting** | Pola `ignore` `**/.*` hanya mencocokkan segmen-titik di posisi **terakhir**, jadi `.git` terkecuali tetapi `.git/HEAD` tidak. Cacat ini tidak terlihat sampai repositori dibuat, lalu ikut terunggah pada deploy berikutnya | Tambah `**/.*/**`, `.git/**`, `.firebase/**` ke `firebase.json`. Jumlah berkas unggah turun 214 → 47 |
 | Catatan klinis pada milidetik sama tampil terbalik | `at` identik → sort seri → urutan bergantung kestabilan sort, yang menampilkan terlama di atas | Indeks penyisipan dipakai sebagai pemecah seri di `Notes.list` dan `Consult.forPatient` |
 
 ---
@@ -212,8 +213,15 @@ Ditulis karena beberapa di antaranya tidak terlihat sampai benar-benar diuji.
 Supaya klaim "sudah jalan" bisa diperiksa ulang:
 
 - **Sapuan rute.** Chrome headless `--dump-dom` ke tiap rute, dicari string `Terjadi kesalahan`
-  (penanda layar gagal) dan DOM yang terlalu pendek. Dijalankan untuk keempat peran; 9 rute
-  produksi bersih setelah pengetatan keamanan.
+  (penanda layar gagal) dan DOM yang terlalu pendek. Dijalankan untuk keempat peran; 14 rute
+  bersih pada pemeriksaan terakhir.
+  Dua jebakan harness yang sudah menipu sekali: (1) `Stop-Process` dengan filter `Path` tidak
+  mematikan seluruh proses anak Chrome, dan profil yang masih terkunci membuat instance baru
+  mengembalikan DOM kosong — bukan regresi kode; (2) rute yang salah tulis memantul ke beranda
+  dan tetap tampak "OK", jadi ukuran DOM perlu dibandingkan dengan halaman lain.
+- **Jumlah berkas unggah.** `firebase deploy` melaporkan "found N files"; angka itu dibandingkan
+  dengan hitungan manual berkas yang layak unggah. Selisih 214 vs 47 itulah yang menyingkap
+  `.git` ikut terunggah — lihat §5.
 - **Ambang eskalasi (51 pemeriksaan) & muatan push (23 pemeriksaan).** Setiap ambang diuji pada
   nilainya sendiri **dan** pada nilai tepat di batas, karena salah tanda perbandingan hanya
   terlihat di sana. Jeda pengulangan diuji dengan cap waktu yang disuntikkan: ditahan sebelum
