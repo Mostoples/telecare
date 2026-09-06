@@ -232,11 +232,66 @@
   }
 
   /* ---------------- Dokter · detail pasien ---------------- */
+
+  const MODE_LABEL = { chat: 'Chat', audio: 'Panggilan suara', video: 'Panggilan video' };
+
+  function gambarRiwayat(riwayat) {
+    if (!riwayat.length) {
+      return `<div class="empty">${icon('stetho')}<b>Belum ada konsultasi</b>
+        <p>Konsultasi yang Anda mulai dari halaman ini akan tercatat di sini.</p></div>`;
+    }
+    return `<div class="list">${riwayat.map((c) => {
+      const doc = D.doctor(c.doctorId);
+      const selesai = c.status !== 'active';
+      const jml = (c.messages || []).length;
+      return `<a class="row" href="#/chat/${esc(c.id)}">
+        <span class="row__ico">${icon(c.mode === 'chat' ? 'chat' : 'video')}</span>
+        <div style="min-width:0">
+          <b>${esc(MODE_LABEL[c.mode] || 'Konsultasi')}${doc ? ' · ' + esc(doc.name) : ''}</b>
+          <small>${esc(shortDate(c.startedAt))} · ${jml} pesan${
+            c.note ? ' · ' + esc(c.note) : ''}</small>
+        </div>
+        <span style="margin-left:auto" class="chip ${selesai ? '' : 'chip--g'}">${
+          selesai ? 'selesai' : 'aktif'}</span>
+      </a>`;
+    }).join('')}</div>`;
+  }
+
+  function gambarCatatan(patientId, bolehHapus) {
+    const notes = TC.Notes.list(patientId);
+    if (!notes.length) {
+      return `<div class="empty">${icon('doc')}<b>Belum ada catatan klinis</b>
+        <p>Catatan yang tersimpan akan tampil di sini, terbaru lebih dulu.</p></div>`;
+    }
+    return `<div class="list">${notes.map((n) => `
+      <div class="row" style="align-items:flex-start">
+        <span class="row__ico">${icon('doc')}</span>
+        <div style="min-width:0;flex:1">
+          <b style="font-size:.87rem">${esc(n.author)}${
+            n.role ? ' · ' + esc(D.role(n.role).name) : ''}</b>
+          <small class="tiny muted" style="display:block">${esc(shortDate(n.at))} ·
+            ${esc(hhmm(n.at))} · ${esc(relTime(n.at))}</small>
+          <p class="small" style="margin:.5rem 0 0;white-space:pre-wrap;color:var(--ink-2)">${esc(n.text)}</p>
+        </div>
+        ${bolehHapus ? `<button class="icon-btn" data-note-del="${esc(n.id)}"
+          aria-label="Hapus catatan" title="Hapus catatan">${icon('trash')}</button>` : ''}
+      </div>`).join('')}</div>`;
+  }
+
   function viewPatientDetail(params) {
     const p = D.patient(params.id);
-    if (!p) { Router.navigate('/klinik/pasien', true); return; }
+    if (!p) {
+      // Layar ini dipakai dua peran; mengembalikan ke daftar milik peran lain
+      // akan tertahan penjaga rute lalu memantul ke beranda.
+      Router.navigate(Store.is('admin-faskes') ? '/faskes/anggota' : '/klinik/pasien', true);
+      return;
+    }
     const m = D.STATUS_META[p.status];
     const fac = D.facility(p.fac);
+    const riwayat = TC.Consult.forPatient(p.id);
+    // Admin faskes memakai layar yang sama lewat /faskes/anggota/:id, tetapi
+    // bukan klinisi — catatan klinis dibuka baca saja untuknya.
+    const bolehMenulis = Store.is('dokter');
 
     TC.topbar(p.name, { sub: p.unit });
     setView(`
@@ -286,22 +341,91 @@
           <div><b>Unit</b><small>${esc(fac.name)} · ${esc(fac.city)}</small></div></div>
       </div>
 
+      <div class="section-title">${icon('stetho')} Riwayat konsultasi
+        <span class="push"></span>
+        <span class="chip">${riwayat.length}</span></div>
+      <div id="patRiwayat">${gambarRiwayat(riwayat)}</div>
+
+      <div class="section-title">${icon('doc')} Catatan klinis
+        <span class="push"></span>
+        <span class="chip" data-note-count>${TC.Notes.count(p.id)}</span></div>
+
+      ${bolehMenulis ? `
+        <div class="card">
+          <label class="field">
+            <span>Catatan baru</span>
+            <textarea id="noteText" rows="4" maxlength="4000"
+              placeholder="Temuan pemeriksaan, penilaian, dan rencana tindak lanjut…"></textarea>
+            <small>Setelah disimpan, isi catatan tidak dapat diubah — hanya dihapus.</small>
+          </label>
+          <button class="btn btn--primary btn--block mt" data-note-save>
+            ${icon('check')} Simpan catatan</button>
+        </div>` : `
+        <div class="note note--i">${icon('info')}
+          <div><b>Hanya dapat dibaca</b>Catatan klinis ditulis oleh dokter. Peran Anda
+          (${esc(D.role(Store.role()).name)}) dapat membacanya tetapi tidak menambahkannya.</div></div>`}
+
+      <div id="patNotes" class="mt">${gambarCatatan(p.id, bolehMenulis)}</div>
+
       <div class="grid2 mt2">
         <button class="btn btn--primary btn--block" data-chat>${icon('chat')} Mulai konsultasi</button>
         <button class="btn btn--ghost btn--block" data-esc>${icon('alert')} Tandai eskalasi</button>
       </div>
 
       <div class="note note--w mt2">${icon('alert')}
-        <div><b>Data contoh</b>Angka pada halaman ini adalah ilustrasi purwarupa, bukan rekam medis nyata.</div></div>
+        <div><b>Data contoh</b>Angka pada halaman ini adalah ilustrasi purwarupa, bukan rekam medis nyata.
+        Catatan klinis tersimpan di peramban perangkat ini saja, belum dibagikan antar-dokter.</div></div>
     `);
 
     const w = series7('pat' + p.id, Math.max(50, p.hr - 12), p.hr + 6);
     TC.lineChart($('#cPat'), [{ data: w.map((d) => d.v), color: m.color, fill: true, dots: true }],
       { xLabels: w.map((d) => d.label) });
 
+    /* ---------------- catatan klinis ---------------- */
+    function segarkanCatatan() {
+      const box = $('#patNotes');
+      if (box) box.innerHTML = gambarCatatan(p.id, bolehMenulis);
+      const c = $('[data-note-count]');
+      if (c) c.textContent = TC.Notes.count(p.id);
+      pasangHapus();
+    }
+
+    function pasangHapus() {
+      if (!bolehMenulis) return;
+      $$('[data-note-del]').forEach((b) => {
+        b.onclick = async () => {
+          const ok = await confirmSheet({
+            title: 'Hapus catatan klinis?',
+            body: 'Catatan yang dihapus tidak dapat dikembalikan.',
+            ok: 'Hapus', danger: true
+          });
+          if (!ok) return;
+          TC.Notes.remove(p.id, b.dataset.noteDel);
+          segarkanCatatan();
+          toast('Catatan dihapus.');
+        };
+      });
+    }
+    pasangHapus();
+
+    if (bolehMenulis) {
+      $('[data-note-save]').onclick = () => {
+        const ta = $('#noteText');
+        const isi = ta.value.trim();
+        if (!isi) { toast('Catatan masih kosong.'); ta.focus(); return; }
+        const u = Store.user();
+        const penulis = (D.doctor(u && u.doctorId) || {}).name || (u && u.name) || 'Dokter';
+        TC.Notes.add(p.id, isi, penulis, Store.role());
+        ta.value = '';
+        segarkanCatatan();
+        toast('Catatan klinis disimpan.');
+      };
+    }
+
     $('[data-chat]').onclick = () => {
       const doc = D.doctor(Store.user().doctorId) || D.DOCTORS[0];
-      const c = TC.Consult.start(doc.id, 'chat');
+      // patientId dikirim agar percakapan ini ikut terkumpul di riwayat pasien.
+      const c = TC.Consult.start(doc.id, 'chat', p.id);
       TC.Consult.push(c.id, {
         from: 'doc',
         text: `Selamat siang ${p.name.split(' ')[0]}, saya melihat pemantauan Anda beberapa hari ini. ` +

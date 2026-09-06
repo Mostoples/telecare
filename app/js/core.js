@@ -104,6 +104,9 @@ window.TC = window.TC || {};
     meals: [],                     // riwayat sesi makan
     activeMeal: null,              // sesi yang sedang berjalan
     consults: [],                  // riwayat & percakapan konsultasi
+    // Catatan klinis dokter, dikelompokkan per pasien:
+    //   { [patientId]: [{ id, at, author, role, text }] }
+    clinicalNotes: {},
     appointments: [],
     notifications: [],
     vitalsHistory: [],

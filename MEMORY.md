@@ -74,7 +74,7 @@ Legenda: ✅ selesai & terverifikasi · 🟡 berjalan, ada batasan · ⬜ belum 
 | **Panggilan WebRTC** | 🟡 | Offer/answer/ICE terverifikasi; TURN sudah didukung + ada diagnostik, **servernya belum diisi** |
 | **PWA (installable + luring)** | ✅ | manifest + service worker; terbukti termuat dengan server dimatikan |
 | Balasan dokter otomatis | 🟡 | Pola kata kunci; berhenti saat dokter nyata hadir |
-| Layar dokter (klinik) | ✅ | Antrean, pasien binaan, detail vital |
+| Layar dokter (klinik) | ✅ | Antrean, pasien binaan, detail vital, riwayat konsultasi, catatan klinis |
 | Layar admin faskes | ✅ | Triase unit, inventaris, nakes |
 | Layar admin platform | ✅ | Statistik, verifikasi dokter, kelola pengguna |
 | Profil, kalibrasi TD, pengaturan | ✅ | Termasuk ekspor data JSON |
@@ -197,6 +197,7 @@ Ditulis karena beberapa di antaranya tidak terlihat sampai benar-benar diuji.
 | **Peserta bisa menambah/mengeluarkan peserta lain** | `.write` di `meta` menurun ke `meta/members`; aturan `$uid == auth.uid` yang lebih dalam tidak dapat menarik izin itu | Izin tulis dipindah ke tiap field meta; `meta` sendiri tanpa `.write` |
 | UI mengaku "tersambung" padahal tulisan ditolak | Sesi gagal tidak mengubah `FB.online` | `FB.canSync()` = tersambung **dan** bersesi |
 | Pesan pertama ditolak pada percakapan baru | `send` hanya menunggu sesi, bukan keanggotaan | `Chat.join` ter-memo jadi prasyarat `send`/`subscribe` |
+| Catatan klinis pada milidetik sama tampil terbalik | `at` identik → sort seri → urutan bergantung kestabilan sort, yang menampilkan terlama di atas | Indeks penyisipan dipakai sebagai pemecah seri di `Notes.list` dan `Consult.forPatient` |
 
 ---
 
@@ -207,6 +208,10 @@ Supaya klaim "sudah jalan" bisa diperiksa ulang:
 - **Sapuan rute.** Chrome headless `--dump-dom` ke tiap rute, dicari string `Terjadi kesalahan`
   (penanda layar gagal) dan DOM yang terlalu pendek. Dijalankan untuk keempat peran; 9 rute
   produksi bersih setelah pengetatan keamanan.
+- **Catatan klinis & riwayat pasien (29 pemeriksaan).** Tambah, tolak isi kosong, pangkas spasi,
+  batas 4.000 karakter, isolasi antar pasien, hapus, persistensi lewat `localStorage` dan terbaca
+  kembali setelah `load()`, serta pengumpulan konsultasi per `patientId`. Uji urutan menemukan
+  bahwa catatan pada milidetik yang sama tampil terbalik — lihat §5.
 - **Parser GATT (42 pemeriksaan).** Diuji dengan vektor byte yang disusun menurut spesifikasi
   Bluetooth SIG, bukan perangkat: HR uint8 dan uint16 little-endian, tiga keadaan kontak kulit,
   bidang energi yang harus dilewati sebelum interval RR, RR bersatuan 1/1024 detik, RMSSD,
@@ -274,7 +279,9 @@ Urut dari yang paling perlu diselesaikan.
 6. **Balasan dokter masih otomatis.** Pola kata kunci di `REPLY_RULES`. Sudah dilabeli jelas
    di dalam aplikasi, tetapi tetap perlu diingat saat mendemokan ke pihak luar.
 7. **Data pasien/faskes bersifat contoh.** `PATIENTS` dan `FACILITIES` di
-   [app/js/data.js](app/js/data.js) adalah ilustrasi, bukan rekam medis.
+   [app/js/data.js](app/js/data.js) adalah ilustrasi, bukan rekam medis. Catatan klinis yang
+   ditulis dokter pun hanya tersimpan di `localStorage` perangkat itu — belum ada penyimpanan
+   bersama, jadi dokter lain tidak dapat melihatnya.
 8. **Belum ada uji otomatis.** Verifikasi selama ini manual lewat skrip headless sekali jalan.
 9. **Peran belum tepercaya di sisi server.** `user.role` disimpan di `localStorage` dan dapat
    diubah pengguna. Aturan database hanya tahu "peserta percakapan", tidak tahu siapa dokter.
@@ -299,7 +306,7 @@ Belum dikerjakan, tinggal pilih:
 - [x] Baca karakteristik GATT nyata dari perangkat BLE (Heart Rate `0x180D` + 4 service lain)
 - [ ] Uji pembacaan GATT dengan wearable BLE sungguhan
 
-- [ ] Halaman detail pasien untuk dokter: riwayat konsultasi + catatan klinis tersimpan
+- [x] Halaman detail pasien untuk dokter: riwayat konsultasi + catatan klinis tersimpan
 - [ ] Notifikasi push (FCM) untuk eskalasi kritis
 - [ ] Uji otomatis sapuan rute agar regresi ketahuan lebih awal
 

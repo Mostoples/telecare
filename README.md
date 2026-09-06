@@ -129,7 +129,7 @@ Empat peran dengan navigasi dan layar masing-masing. Peran dapat diganti kapan s
 | Peran | Beranda | Isi |
 | --- | --- | --- |
 | `pasien` | `/home` | Vital langsung, EKG, sesi makan, analisis, konsultasi, perangkat |
-| `dokter` | `/klinik` | Status menerima konsultasi, antrean masuk, pasien binaan + detail vital, jadwal |
+| `dokter` | `/klinik` | Status menerima konsultasi, antrean masuk, pasien binaan + detail vital, riwayat konsultasi & catatan klinis, jadwal |
 | `admin-faskes` | `/faskes` | Dashboard unit, triase anggota, inventaris perangkat, daftar nakes |
 | `admin` | `/sistem` | Statistik platform, verifikasi dokter, kelola pengguna & faskes |
 
@@ -177,6 +177,27 @@ seolah masih hidup. Beranda menandai asalnya: **dari perangkat** atau **simulasi
 
 Web Bluetooth hanya tersedia di peramban berbasis Chromium pada origin aman. Di Safari dan
 Firefox aplikasi tetap memakai daftar perangkat simulasi.
+
+### Detail pasien untuk dokter
+
+`/klinik/pasien/:id` menampilkan vital, indeks stres, tren 7 hari, perangkat, **riwayat
+konsultasi**, dan **catatan klinis**.
+
+Riwayat konsultasi dikumpulkan lewat `patientId` pada catatan konsultasi. Field itu sengaja
+hanya disimpan secara lokal dan **tidak** dikirim ke Realtime Database — aturan di sana menolak
+kunci di luar skema `meta`, jadi mengirimnya akan menggagalkan penulisan.
+
+Catatan klinis (`TC.Notes`) bersifat **tambah-saja pada tiap butirnya**: teks yang sudah
+tersimpan tidak dapat diubah, hanya dihapus seluruhnya, supaya isi catatan tidak berubah
+diam-diam setelah dijadikan rujukan. Setiap catatan menyimpan penulis, peran, dan cap waktu.
+Urutannya terbaru lebih dulu, dengan indeks penyisipan sebagai pemecah seri — dua catatan bisa
+memiliki cap waktu yang sama persis.
+
+Layar yang sama dipakai admin faskes lewat `/faskes/anggota/:id`, tetapi peran itu bukan klinisi
+sehingga catatan klinis dibuka **baca saja**.
+
+Catatan tersimpan di `localStorage` perangkat itu saja; belum ada penyimpanan bersama
+antar-dokter.
 
 ### PWA — dapat dipasang dan jalan luring
 

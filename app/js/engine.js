@@ -617,7 +617,15 @@
 
     function record(id) { return Store.state.consults.find((c) => c.id === id) || null; }
 
-    function start(doctorId, mode) {
+    /**
+     * @param {string} doctorId
+     * @param {string} mode      'chat' | 'audio' | 'video'
+     * @param {string} [patientId]  diisi bila percakapan dibuka dokter dari
+     *   halaman pasien, supaya riwayat konsultasi pasien itu dapat dikumpulkan.
+     *   Sengaja tidak dikirim ke Realtime Database: aturan di sana menolak
+     *   kunci di luar skema meta.
+     */
+    function start(doctorId, mode, patientId) {
       const doc = D.doctor(doctorId);
       // ID konsultasi sekaligus menjadi ID ruang panggilan dan dibagikan lewat
       // tautan undangan, sehingga ikut menentukan hak akses — pakai pembangkit
@@ -627,6 +635,7 @@
         id, doctorId, mode: mode || 'chat',
         startedAt: Date.now(), status: 'active', messages: []
       };
+      if (patientId) c.patientId = patientId;
       Store.update((s) => { s.consults.unshift(c); });
 
       if (TC.FB && TC.FB.ready) TC.Chat.ensure(id, c);
@@ -714,7 +723,85 @@
       if (TC.FB && TC.FB.online) TC.Chat.setStatus(id, 'done');
     }
 
-    return { start, get: record, adopt, push, mirror, subscribe, replyTo, end };
+    /**
+     * Konsultasi yang tercatat untuk seorang pasien, terbaru lebih dulu.
+     * `consults` disusun dengan unshift sehingga indeks kecil berarti lebih
+     * baru; indeks itu dipakai sebagai pemecah seri ketika `startedAt` sama.
+     */
+    function forPatient(patientId) {
+      if (!patientId) return [];
+      return Store.state.consults
+        .map((c, i) => ({ c, i }))
+        .filter((x) => x.c.patientId === patientId)
+        .sort((a, b) => ((b.c.startedAt || 0) - (a.c.startedAt || 0)) || (a.i - b.i))
+        .map((x) => x.c);
+    }
+
+    return { start, get: record, adopt, push, mirror, subscribe, replyTo, end, forPatient };
+  })();
+
+  /* ============================================================
+     5b. CATATAN KLINIS
+     ============================================================
+     Catatan dokter pada seorang pasien. Bersifat tambah-saja pada
+     tiap butirnya: teks yang sudah tersimpan tidak dapat diubah,
+     hanya dihapus seluruhnya, supaya isi catatan tidak berubah
+     diam-diam setelah dijadikan rujukan.
+
+     Seperti data lain di purwarupa ini, catatan tersimpan di
+     localStorage perangkat itu saja — belum ada penyimpanan bersama
+     antar-dokter.
+     ============================================================ */
+  const Notes = (function () {
+
+    /**
+     * Terbaru lebih dulu. Indeks penyisipan dipakai sebagai pemecah seri:
+     * dua catatan dapat memiliki `at` yang sama persis bila ditulis dalam
+     * milidetik yang sama, dan tanpa pemecah itu urutannya bergantung pada
+     * kestabilan sort — yang justru menampilkan yang terlama di atas.
+     */
+    function list(patientId) {
+      const all = Store.state.clinicalNotes || {};
+      const arr = all[patientId] || [];
+      return arr
+        .map((n, i) => ({ n, i }))
+        .sort((a, b) => ((b.n.at || 0) - (a.n.at || 0)) || (b.i - a.i))
+        .map((x) => x.n);
+    }
+
+    function add(patientId, text, author, role) {
+      const isi = String(text || '').trim();
+      if (!patientId || !isi) return null;
+      const note = {
+        id: uid('cn'),
+        at: Date.now(),
+        author: author || 'Tidak diketahui',
+        role: role || null,
+        text: isi.slice(0, 4000)
+      };
+      Store.update((s) => {
+        if (!s.clinicalNotes) s.clinicalNotes = {};
+        if (!s.clinicalNotes[patientId]) s.clinicalNotes[patientId] = [];
+        s.clinicalNotes[patientId].push(note);
+      });
+      return note;
+    }
+
+    function remove(patientId, noteId) {
+      let ok = false;
+      Store.update((s) => {
+        const arr = s.clinicalNotes && s.clinicalNotes[patientId];
+        if (!arr) return;
+        const n = arr.length;
+        s.clinicalNotes[patientId] = arr.filter((x) => x.id !== noteId);
+        ok = s.clinicalNotes[patientId].length !== n;
+      });
+      return ok;
+    }
+
+    function count(patientId) { return list(patientId).length; }
+
+    return { list, add, remove, count };
   })();
 
   /* ============================================================
@@ -743,6 +830,7 @@
   TC.Devices = Devices;
   TC.Meals = Meals;
   TC.Consult = Consult;
+  TC.Notes = Notes;
   TC.EcgRenderer = EcgRenderer;
   TC.ecgAt = ecgAt;
   TC.weekTrend = weekTrend;
