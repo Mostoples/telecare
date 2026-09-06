@@ -1,0 +1,127 @@
+<#
+  Pembantu pengujian peramban headless.
+
+  ALASAN BERKAS INI ADA
+  Cara yang naif — `Get-Process chrome | Stop-Process -Force` — mematikan
+  SELURUH proses peramban, termasuk tab yang sedang dipakai pemilik komputer.
+  Itu pernah terjadi dan tidak boleh terulang. Berkas ini memaksa tiga hal:
+
+    1. Memakai Edge secara bawaan, bukan Chrome yang biasa dipakai sehari-hari.
+    2. Selalu memakai profil sementara terpisah, jadi profil asli tak tersentuh.
+    3. Hanya menghentikan proses yang dijalankan sendiri, lewat PID-nya —
+       tidak pernah berdasarkan nama proses.
+
+  PEMAKAIAN
+    . tools\uji-browser.ps1
+
+    # Ambil DOM setelah halaman selesai memuat (proses keluar sendiri)
+    $dom = Ambil-Dom -Url 'http://127.0.0.1:8920/app/#/home'
+
+    # Tangkap layar
+    Ambil-Layar -Url '...' -Keluaran "$env:TEMP\a.png" -Lebar 1280 -Tinggi 860
+
+    # Instance yang harus tetap hidup (mis. dua sisi panggilan)
+    $p = Jalankan-Latar -Url '...' -Label 'dokter'
+    ...
+    Hentikan-Latar $p
+#>
+
+$script:PeramabanUji = @(
+  "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
+  "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
+) | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+if (-not $script:PeramabanUji) {
+  throw 'Edge tidak ditemukan. Setel $script:PeramabanUji ke peramban berbasis Chromium lain.'
+}
+
+function Get-FlagDasar {
+  param([string]$Profil)
+  @(
+    '--headless=new',
+    '--disable-gpu',
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--disable-background-networking',
+    '--disable-sync',
+    "--user-data-dir=$Profil"
+  )
+}
+
+function New-ProfilSementara {
+  param([string]$Label = 'uji')
+  $p = Join-Path $env:TEMP ("tc-$Label-" + [guid]::NewGuid().ToString('N').Substring(0, 8))
+  Remove-Item $p -Recurse -Force -ErrorAction SilentlyContinue
+  return $p
+}
+
+<# Memuat halaman lalu mengembalikan DOM-nya. Proses keluar sendiri. #>
+function Ambil-Dom {
+  param(
+    [Parameter(Mandatory)][string]$Url,
+    [int]$DurasiMs = 12000,
+    [string]$Label = 'dom',
+    [string[]]$FlagTambahan = @()
+  )
+  $prof = New-ProfilSementara -Label $Label
+  try {
+    $flag = (Get-FlagDasar $prof) + @("--virtual-time-budget=$DurasiMs", '--dump-dom') + $FlagTambahan
+    return (& $script:PeramabanUji @flag $Url 2>$null | Out-String)
+  } finally {
+    Remove-Item $prof -Recurse -Force -ErrorAction SilentlyContinue
+  }
+}
+
+<# Menangkap layar halaman ke berkas PNG. #>
+function Ambil-Layar {
+  param(
+    [Parameter(Mandatory)][string]$Url,
+    [Parameter(Mandatory)][string]$Keluaran,
+    [int]$Lebar = 1280,
+    [int]$Tinggi = 860,
+    [int]$DurasiMs = 6000,
+    [string]$Label = 'shot'
+  )
+  $prof = New-ProfilSementara -Label $Label
+  try {
+    $flag = (Get-FlagDasar $prof) + @(
+      "--window-size=$Lebar,$Tinggi",
+      "--virtual-time-budget=$DurasiMs",
+      "--screenshot=$Keluaran"
+    )
+    & $script:PeramabanUji @flag $Url 2>$null | Out-Null
+    return (Test-Path $Keluaran)
+  } finally {
+    Remove-Item $prof -Recurse -Force -ErrorAction SilentlyContinue
+  }
+}
+
+<#
+  Menjalankan instance yang harus tetap hidup. Mengembalikan objek berisi
+  PID dan lokasi profilnya, untuk diserahkan ke Hentikan-Latar.
+#>
+function Jalankan-Latar {
+  param(
+    [Parameter(Mandatory)][string]$Url,
+    [string]$Label = 'latar',
+    [string[]]$FlagTambahan = @()
+  )
+  $prof = New-ProfilSementara -Label $Label
+  $flag = (Get-FlagDasar $prof) + $FlagTambahan
+  $p = Start-Process -FilePath $script:PeramabanUji -ArgumentList ($flag + @($Url)) -PassThru
+  return [pscustomobject]@{ Proses = $p; Id = $p.Id; Profil = $prof; Label = $Label }
+}
+
+<#
+  Menghentikan HANYA proses yang dijalankan Jalankan-Latar, beserta anak-anaknya.
+  taskkill /T menutup seluruh pohon proses peramban tanpa menyentuh instance lain.
+#>
+function Hentikan-Latar {
+  param([Parameter(Mandatory)]$Instance)
+  if ($null -eq $Instance) { return }
+  taskkill /PID $Instance.Id /T /F 2>$null | Out-Null
+  Start-Sleep -Milliseconds 600
+  Remove-Item $Instance.Profil -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+Write-Output "peramban uji: $script:PeramabanUji"

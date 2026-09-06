@@ -178,6 +178,77 @@ seolah masih hidup. Beranda menandai asalnya: **dari perangkat** atau **simulasi
 Web Bluetooth hanya tersedia di peramban berbasis Chromium pada origin aman. Di Safari dan
 Firefox aplikasi tetap memakai daftar perangkat simulasi.
 
+### Panggilan masuk — perangkat dokter berdering
+
+Ketika pasien menekan **Video Call** atau **Panggilan Suara**, perangkat dokter langsung berdering:
+overlay layar penuh, nada dering, getaran di ponsel, notifikasi sistem, dan judul tab yang
+berkedip agar panggilan tetap terlihat di desktop meski jendelanya tertutup jendela lain.
+
+Empat jalur pemberitahuan dipakai sekaligus, sebab masing-masing bisa gagal sendiri-sendiri:
+
+| Jalur | Kapan bekerja |
+| --- | --- |
+| Overlay layar penuh | selalu, bila tab terlihat |
+| Nada dering + getar | dapat diblokir peramban sampai ada interaksi pertama pengguna |
+| Notifikasi sistem | satu-satunya yang terlihat saat tab di latar belakang; perlu izin |
+| Judul tab berkedip | desktop, saat jendela tertutup jendela lain |
+
+Bila nada dering diblokir, overlay **mengatakannya terus terang** alih-alih membiarkan dokter
+menyangka perangkatnya berbunyi.
+
+Dering dikendalikan sakelar **Menerima konsultasi** di layar klinik. Saat dimatikan, dokter
+dikeluarkan dari papan jaga sehingga pasien tidak dapat mendering perangkatnya.
+
+#### Mengapa lewat Realtime Database, bukan FCM
+
+Selama aplikasi dokter terbuka — termasuk tab latar belakang atau PWA terpasang — Realtime
+Database sudah mengantarkan panggilan seketika lewat `child_added`, **tanpa prasyarat apa pun**.
+FCM hanya diperlukan untuk satu celah tersisa: memberi tahu ketika aplikasi benar-benar tertutup.
+Jalur itu sudah disiapkan tetapi belum aktif — lihat bagian berikutnya.
+
+#### Bentuk datanya, dan mengapa dikunci per Firebase uid
+
+| Node | Isi | Siapa boleh membaca |
+| --- | --- | --- |
+| `duty/{doctorId}` | `{ uid, name, at }` | siapa pun yang terautentikasi |
+| `inbox/{uid}/{ringId}` | `{ from, fromName, consultId, mode, at, status }` | **hanya** pemilik uid, dan pemanggilnya |
+| `push/{uid}` | `{ token, role, at }` | **hanya** pemilik uid |
+
+Entri panggilan memuat `consultId`, dan siapa pun yang memegang consultId dapat bergabung ke
+percakapan itu. Kalau kotak masuk dikunci per `doctorId`, aturan database tidak punya cara
+memverifikasi bahwa pembacanya benar-benar dokter tersebut — peran hanya tersimpan di
+`localStorage`. Dengan mengunci per `auth.uid`, aturan dapat memaksa `auth.uid == $uid`, sehingga
+consultId tetap rahasia. Papan jaga hanya memuat uid yang bersifat buram dan tidak memberi hak apa pun.
+
+Alur lengkapnya: dokter mendaftar di `duty` → pasien membaca uid dokter dari situ → pasien menulis
+entri ke `inbox/{uidDokter}` → dokter berdering → menerima menulis `status: accepted` lalu
+bergabung ke percakapan; pasien melihat perubahan status itu pada entri ringnya sendiri.
+Tidak dijawab dalam 45 detik menjadi `missed`.
+
+#### Melengkapi dengan push FCM (aplikasi tertutup)
+
+Dua prasyarat yang **tidak dapat disediakan dari sisi kode**:
+
+1. **VAPID key** — Firebase Console → Project settings → Cloud Messaging → Web Push certificates →
+   *Generate key pair*, lalu tempel ke `vapidKey` di
+   [app/js/push-config.js](app/js/push-config.js). Tidak ada API publik untuk membuatnya; sudah
+   diperiksa, semua endpoint kandidat membalas 404.
+2. **Paket Blaze** — Cloud Functions memerlukannya.
+
+Pengirimnya sudah ditulis di [functions/index.js](functions/index.js), memantau
+`inbox/{uid}/{ringId}` dan mengirim push ke token pada `push/{uid}`. Blok `functions` **sengaja
+belum** ditambahkan ke `firebase.json` supaya `firebase deploy` yang ada sekarang tidak ikut gagal.
+Setelah kedua prasyarat siap:
+
+```bash
+# 1. tambahkan ke firebase.json:  "functions": { "source": "functions" }
+cd functions && npm install && cd ..
+npx firebase-tools deploy --only functions --project telecare-id
+```
+
+Catatan iOS: web push di Safari menuntut aplikasi **dipasang ke Layar Utama** lebih dulu
+(iOS 16.4+). Di Android dan desktop Chromium tidak ada syarat itu.
+
 ### Notifikasi eskalasi
 
 Ada dua hal berbeda yang mudah tertukar:

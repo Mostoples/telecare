@@ -641,6 +641,8 @@
     if (!c) { joining(params.id, () => viewCall(params)); return; }
     const doc = D.doctor(c.doctorId) || D.DOCTORS[0];
     const audioOnly = c.mode === 'audio';
+    // Dokter tidak mendering dirinya sendiri; hanya pasien yang memanggil.
+    const asDoctor = Store.is('dokter');
 
     setTopbar('');
     setView(`
@@ -664,6 +666,7 @@
             <small>${esc(D.spec(doc.spec).name)}${audioOnly ? ' · panggilan suara' : ''}</small>
             <div class="call__timer">${icon('clock')} <span id="callTimer">00:00</span></div>
             <p class="call__state" id="callState">Menyiapkan kamera dan mikrofon…</p>
+            <div class="callring" id="ringState" hidden><i></i><span></span></div>
             <button class="btn btn--soft btn--sm" id="btnInvite" hidden style="margin-top:12px">
               ${icon('link')} Salin tautan undangan</button>
           </div>
@@ -707,6 +710,64 @@
      * "TURN dikonfigurasi" dari "TURN terpakai" — dua hal yang sering
      * disamakan saat memeriksa masalah panggilan.
      */
+    /* ---------------- memanggil dokter ---------------- */
+    let panggilan = null;
+
+    function ringInfo(teks, kelas) {
+      const el = $('#ringState');
+      if (!el) return;
+      el.hidden = false;
+      el.className = 'callring' + (kelas ? ' callring--' + kelas : '');
+      el.querySelector('span').textContent = teks;
+    }
+
+    /**
+     * Membunyikan dering di perangkat dokter lewat kotak masuk di Realtime
+     * Database. Bila dokter tidak sedang jaga, tidak ada yang bisa didering —
+     * pasien diberi tahu agar memakai tautan undangan, bukan dibiarkan
+     * menunggu tanpa penjelasan.
+     */
+    async function deringkanDokter() {
+      if (!TC.Ring || !TC.Ring.tersedia() || asDoctor) return;
+      try {
+        panggilan = await TC.Ring.panggil({
+          doctorId: c.doctorId,
+          consultId: params.id,
+          mode: audioOnly ? 'audio' : 'video',
+          fromName: (Store.profile().nickname || (Store.user() || {}).name || 'Pasien')
+        });
+      } catch (e) {
+        console.warn('[TeleCare] gagal memanggil:', e.message);
+      }
+
+      if (!panggilan) {
+        ringInfo('Dokter tidak sedang menerima panggilan. Bagikan tautan undangan agar ' +
+                 'dia dapat bergabung dari perangkatnya.', 'lewat');
+        return;
+      }
+
+      ringInfo('Memanggil ' + panggilan.doctorName + '… perangkatnya sedang berdering.');
+
+      panggilan.pantau((status) => {
+        if (status === 'accepted') {
+          ringInfo('Panggilan diterima. Menyambungkan…');
+          panggilan.selesai();
+        } else if (status === 'declined') {
+          ringInfo('Dokter menolak panggilan ini.', 'tolak');
+          panggilan.selesai();
+        } else if (status === 'missed') {
+          ringInfo('Tidak dijawab. Coba lagi, atau buat janji temu.', 'lewat');
+          panggilan.selesai();
+        }
+      });
+    }
+
+    // Panggilan dibatalkan bila pasien meninggalkan layar sebelum dijawab,
+    // supaya perangkat dokter tidak berdering untuk panggilan yang sudah tidak ada.
+    Router.onLeave(() => {
+      if (panggilan) { panggilan.batalkan().catch(() => {}); panggilan = null; }
+    });
+
     async function laporkanJalur() {
       if (!sess || !sess.jalurTerpakai) return;
       const j = await sess.jalurTerpakai();
@@ -744,6 +805,9 @@
               setState('Menunggu peserta lain bergabung…');
               const b = $('#btnInvite');
               if (b) { b.hidden = false; b.onclick = () => copyLink('/call/' + params.id); }
+              // Peserta pertama adalah pemanggil, jadi di sinilah dering
+              // dibunyikan pada perangkat dokter.
+              deringkanDokter();
             } else {
               setState('Menyambungkan ke peserta…');
             }

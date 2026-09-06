@@ -5,7 +5,7 @@
 (function (TC) {
   'use strict';
 
-  const { $, $$, esc, icon, Store, Router } = TC;
+  const { $, $$, esc, icon, Store, Router, toast } = TC;
   const V = TC.views;
 
   /* ---------------- RUTE ----------------
@@ -268,6 +268,78 @@
       // Token FCM diperbarui bila izin sudah pernah diberikan sebelumnya.
       if (TC.Push.permission() === 'granted') TC.Push.daftarFcm().catch(() => {});
     }
+
+    if (TC.Ring) {
+      // Membuka kunci audio pada interaksi pertama, supaya dering berikutnya
+      // sudah boleh berbunyi tanpa diblokir peramban.
+      TC.Ring.nada.siapkanIzin();
+      if (Store.user() && Store.is('dokter')) siapkanPenerimaanPanggilan();
+    }
+  }
+
+  /**
+   * Menyalakan atau memadamkan status jaga sesuai sakelar "Menerima konsultasi"
+   * di layar klinik. Dipanggil juga dari sakelar itu supaya perubahannya
+   * langsung berlaku tanpa memuat ulang aplikasi.
+   */
+  function segarkanJaga() {
+    if (!TC.Ring || !Store.user() || !Store.is('dokter')) return;
+    const doc = TC.DATA.doctor((Store.user() || {}).doctorId);
+    if (!doc) return;
+    if (Store.state.settings.doctorOnline !== false) {
+      TC.Ring.mulaiJaga(doc.id, doc.name).catch(() => {});
+    } else {
+      TC.Ring.berhentiJaga();
+    }
+  }
+  TC.segarkanJaga = segarkanJaga;
+
+  /**
+   * Menyiapkan perangkat dokter untuk menerima panggilan: mendaftar di papan
+   * jaga, lalu mendengarkan kotak masuk. Berjalan di semua layar, bukan hanya
+   * layar klinik — panggilan bisa datang kapan saja.
+   */
+  function siapkanPenerimaanPanggilan() {
+    const u = Store.user();
+    const doc = TC.DATA.doctor(u && u.doctorId);
+    if (!doc) return;
+
+    // Hanya mendaftar bila dokter memang sedang menerima konsultasi.
+    if (Store.state.settings.doctorOnline !== false) {
+      TC.Ring.mulaiJaga(doc.id, doc.name).catch((e) =>
+        console.warn('[TeleCare] gagal mendaftar jaga:', e.message));
+    }
+
+    if (TC.Push && TC.Push.permission() === 'granted') {
+      TC.Push.daftarFcm().then((t) => {
+        if (t && TC.Ring.simpanToken) TC.Ring.simpanToken(t, 'dokter');
+      }).catch(() => {});
+    }
+
+    TC.Ring.dengarkan({
+      onMasuk(ring) {
+        TC.RingUI.tampilkan(ring, {
+          onTerima() {
+            TC.Ring.terima(ring).then((consultId) => {
+              if (!consultId) { toast('Percakapan tidak ditemukan.', 'err'); return; }
+              // Percakapan diambil dari server lebih dulu bila belum ada
+              // salinan lokalnya di perangkat ini.
+              TC.Consult.adopt(consultId).then(() => {
+                Router.navigate((ring.mode === 'chat' ? '/chat/' : '/call/') + consultId);
+              });
+            });
+          },
+          onTolak() { TC.Ring.tolak(ring); },
+          onLewat() { TC.Ring.tolak(ring); }
+        });
+      },
+      onBatal(ringId) { TC.RingUI.tutupBila(ringId); }
+    });
+
+    // Berhenti jaga saat tab ditutup, agar pasien tidak memanggil perangkat
+    // yang sudah tidak mendengarkan. onDisconnect di server menangani kasus
+    // sambungan putus; ini menangani penutupan tab yang tertib.
+    window.addEventListener('pagehide', () => { TC.Ring.berhentiJaga(); });
   }
 
   /**

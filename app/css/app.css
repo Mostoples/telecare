@@ -786,3 +786,87 @@ body.is-bare .toasts{bottom:20px}
 
 /* Kartu lampiran milik sendiri diberi warna berbeda agar sisi kirim jelas. */
 .msg--cardme{align-self:flex-end;border-color:var(--green-300);background:var(--green-50)}
+
+/* ══════════ PANGGILAN MASUK (dering) ══════════
+   Overlay ini harus berada di atas segalanya, termasuk layar panggilan
+   (z-index 200) dan sheet (310), sebab panggilan masuk tidak boleh
+   tertutup apa pun. */
+.ringcall{
+  position:fixed;inset:0;z-index:400;display:grid;place-items:center;
+  padding:24px;background:rgba(4,23,18,.82);backdrop-filter:blur(10px);
+  animation:fade .22s ease;
+}
+.ringcall__box{
+  width:min(94vw,380px);padding:34px 26px 26px;border-radius:30px;text-align:center;
+  background:linear-gradient(170deg,#0B3A2C,#05201A);color:#fff;
+  border:1px solid rgba(111,211,166,.22);box-shadow:0 24px 70px rgba(0,0,0,.5);
+  animation:ringUp .4s var(--ease-out);
+}
+@keyframes ringUp{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+
+.ringcall__jenis{
+  display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:var(--r-pill);
+  background:rgba(111,211,166,.14);color:var(--green-300);
+  font-size:.74rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+}
+.ringcall__jenis svg{width:15px;height:15px}
+
+/* Cincin berdenyut: penanda visual utama di desktop, terlihat dari jauh. */
+.ringcall__ava{position:relative;width:92px;height:92px;margin:26px auto 20px}
+.ringcall__ava .avatar{position:relative;z-index:2;margin:0}
+.ringcall__pulse{
+  position:absolute;inset:-18px;border-radius:50%;border:2px solid rgba(111,211,166,.45);
+  animation:ringWave 2.1s ease-out infinite;
+}
+.ringcall__pulse:nth-child(2){animation-delay:.7s}
+.ringcall__pulse:nth-child(3){animation-delay:1.4s}
+@keyframes ringWave{0%{transform:scale(.8);opacity:.85}100%{transform:scale(1.6);opacity:0}}
+
+.ringcall__nama{display:block;font-size:1.24rem;font-weight:800;letter-spacing:-.01em}
+.ringcall__sub{display:block;margin-top:6px;font-size:.83rem;color:rgba(255,255,255,.58)}
+.ringcall__sub [data-sisa]{font-family:var(--mono);font-weight:700;color:var(--green-300)}
+
+.ringcall__aksi{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:28px}
+.ringcall__btn{
+  display:grid;place-items:center;gap:8px;padding:16px 10px;border-radius:22px;
+  font-size:.88rem;font-weight:700;color:#fff;transition:.22s var(--ease);
+}
+.ringcall__btn svg{width:24px;height:24px}
+.ringcall__btn:disabled{opacity:.5;pointer-events:none}
+.ringcall__btn--terima{background:var(--green-500)}
+.ringcall__btn--terima:hover{background:var(--green-400);transform:translateY(-2px)}
+/* Tombol terima ikut berdenyut supaya arah tindakan jelas tanpa dibaca. */
+.ringcall__btn--terima{animation:ringNudge 1.6s ease-in-out infinite}
+@keyframes ringNudge{0%,100%{box-shadow:0 0 0 0 rgba(4,154,91,.55)}70%{box-shadow:0 0 0 12px rgba(4,154,91,0)}}
+.ringcall__btn--tolak{background:rgba(255,255,255,.13)}
+.ringcall__btn--tolak:hover{background:var(--coral-500)}
+
+.ringcall__catatan{
+  margin:20px 0 0;padding:11px 13px;border-radius:14px;text-align:left;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+  font-size:.76rem;line-height:1.5;color:rgba(255,255,255,.72);
+  display:flex;gap:9px;align-items:flex-start;
+}
+.ringcall__catatan svg{width:15px;height:15px;flex:none;margin-top:2px;color:var(--green-300)}
+
+/* Menahan gulir latar selama panggilan berdering. */
+body.is-ringing{overflow:hidden}
+
+@media (prefers-reduced-motion:reduce){
+  .ringcall__pulse,.ringcall__btn--terima{animation:none}
+}
+
+/* ---------- status memanggil (sisi pasien) ---------- */
+.callring{
+  display:flex;align-items:center;gap:11px;margin-top:14px;padding:12px 14px;
+  border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  font-size:.83rem;color:rgba(255,255,255,.82);text-align:left;
+}
+.callring i{
+  width:9px;height:9px;border-radius:50%;background:var(--green-300);flex:none;
+  animation:pulse 1.3s ease-in-out infinite;
+}
+.callring--tolak{background:rgba(226,84,63,.18);border-color:rgba(226,84,63,.35)}
+.callring--tolak i{background:var(--coral-500);animation:none}
+.callring--lewat{background:rgba(224,155,18,.16);border-color:rgba(224,155,18,.32)}
+.callring--lewat i{background:var(--amber-500);animation:none}

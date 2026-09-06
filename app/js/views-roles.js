@@ -152,6 +152,9 @@
 
     $('#tOnline').onchange = (e) => {
       Store.update((s) => { s.settings.doctorOnline = e.target.checked; });
+      // Status jaga di server ikut berubah: kalau tidak, pasien masih dapat
+      // mendering perangkat yang pemiliknya sudah menyatakan tidak menerima.
+      if (TC.segarkanJaga) TC.segarkanJaga();
       toast(e.target.checked ? 'Anda kini menerima konsultasi.' : 'Status diubah menjadi tidak menerima.');
       Router.render();
     };

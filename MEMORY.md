@@ -72,6 +72,7 @@ Legenda: ✅ selesai & terverifikasi · 🟡 berjalan, ada batasan · ⬜ belum 
 | Analisis (vital/gizi/respons) | ✅ | |
 | **Chat via Firebase RTDB** | ✅ | Tersinkron antarperangkat, ada mirror lokal luring; akses per peserta |
 | **Panggilan WebRTC** | 🟡 | Offer/answer/ICE terverifikasi; TURN sudah didukung + ada diagnostik, **servernya belum diisi** |
+| **Panggilan masuk berdering** | ✅ | Overlay, nada, getar, notifikasi, judul tab; lewat RTDB tanpa prasyarat |
 | **PWA (installable + luring)** | ✅ | manifest + service worker; terbukti termuat dengan server dimatikan |
 | Balasan dokter otomatis | 🟡 | Pola kata kunci; berhenti saat dokter nyata hadir |
 | Layar dokter (klinik) | ✅ | Antrean, pasien binaan, detail vital, riwayat konsultasi, catatan klinis |
@@ -232,6 +233,17 @@ Supaya klaim "sudah jalan" bisa diperiksa ulang:
   batas 4.000 karakter, isolasi antar pasien, hapus, persistensi lewat `localStorage` dan terbaca
   kembali setelah `load()`, serta pengumpulan konsultasi per `patientId`. Uji urutan menemukan
   bahwa catatan pada milidetik yang sama tampil terbalik — lihat §5.
+- **Aturan dering (31 pemeriksaan).** Tiga sesi anonim sekaligus (dokter, pasien, pihak ketiga)
+  memastikan `consultId` pada entri panggilan tidak terbaca pihak ketiga — baik lewat daftar
+  inbox, entri langsung, maupun pembacaan field. Pemanggil boleh memantau entrinya sendiri tetapi
+  tidak seluruh inbox. Token FCM hanya terbaca pemiliknya. Pemalsuan `from`, status di luar
+  daftar, dan kunci asing ditolak.
+- **Dering dua peramban (28 pemeriksaan).** Dua profil Chrome memuat `ring.js` dan `ring-ui.js`
+  yang sungguhan: dokter mendaftar jaga, pasien membaca papan jaga lalu memanggil, dokter menerima
+  `child_added`, overlay ter-render di DOM dengan nama pemanggil dan kedua tombol, `body.is-ringing`
+  terpasang, judul tab berganti. Panggilan diterima lewat **klik tombol sungguhan**, bukan
+  pemanggilan API, lalu pasien terbukti melihat status `accepted`. Memanggil dokter yang tidak
+  jaga mengembalikan `null`, bukan galat.
 - **Parser GATT (42 pemeriksaan).** Diuji dengan vektor byte yang disusun menurut spesifikasi
   Bluetooth SIG, bukan perangkat: HR uint8 dan uint16 little-endian, tiga keadaan kontak kulit,
   bidang energi yang harus dilewati sebelum interval RR, RR bersatuan 1/1024 detik, RMSSD,
@@ -306,6 +318,12 @@ Urut dari yang paling perlu diselesaikan.
 9. **Peran belum tepercaya di sisi server.** `user.role` disimpan di `localStorage` dan dapat
    diubah pengguna. Aturan database hanya tahu "peserta percakapan", tidak tahu siapa dokter.
    Untuk membatasi berdasarkan peran, peran harus ikut di token (custom claims) — perlu Admin SDK.
+11. **⚠️ Papan jaga dapat dibajak.** `duty/$doctorId` boleh ditulis siapa pun yang terautentikasi
+   selama ia mencantumkan uid-nya sendiri. Artinya seseorang dapat mengaku sebagai dokter tertentu
+   dan menerima panggilan yang ditujukan kepadanya. Sudah diverifikasi terjadi. Tidak dapat
+   dicegah tanpa peran tepercaya di server (butir 9) — aturan database tidak punya cara mengetahui
+   siapa dokter sungguhan. Kotak masuk sendiri aman: `inbox/$uid` hanya terbaca pemilik uid, jadi
+   `consultId` tidak bocor.
 10. **Model akses percakapan bersifat kapabilitas.** Siapa pun bersesi yang memegang ID
    konsultasi boleh bergabung. Ini tuntutan fitur tautan undangan; pengamanannya ada pada ID
    128-bit dari `crypto.getRandomValues` ([app/js/core.js](app/js/core.js) `secureId`).
@@ -364,6 +382,8 @@ app/js/engine.js                             simulasi vital, hub perangkat, sesi
 app/js/rtc-config.js                         server ICE/TURN (diisi pemilik proyek)
 app/js/ble.js                                pembacaan GATT + parser IEEE-11073
 app/js/push-config.js · app/js/push.js       ambang eskalasi, notifikasi, FCM
+app/js/ring.js · app/js/ring-ui.js           panggilan masuk: kanal + dering & overlay
+functions/index.js                           pengirim push panggilan (belum aktif)
 app/js/firebase.js                           chat RTDB + Google Sign-In + WebRTC
 app/manifest.webmanifest · app/sw.js         PWA: installable + luring
 app/assets/icons/                            ikon PWA (dibangun tools/build_icons.py)

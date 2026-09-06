@@ -15,7 +15,7 @@
    ============================================================ */
 'use strict';
 
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE = `telecare-app-${VERSION}`;
 
 // Kerangka aplikasi. Urutan skrip mengikuti app/index.html.
@@ -32,6 +32,8 @@ const SHELL = [
   'js/engine.js',
   'js/push-config.js',
   'js/push.js',
+  'js/ring.js',
+  'js/ring-ui.js',
   'js/views-auth.js',
   'js/views-home.js',
   'js/views-session.js',
