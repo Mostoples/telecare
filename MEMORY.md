@@ -21,7 +21,7 @@ berkas ini khusus soal *progres* dan *alasan di balik keputusan*.
 | **Situs penelitian** | https://telecare-id.web.app |
 | **Aplikasi** | https://telecare-id.web.app/app/ |
 | **Ukuran** | ± 11.500 baris (HTML/CSS/JS/Python) |
-| **Versi kontrol** | ⚠️ belum ada Git — lihat §7 |
+| **Versi kontrol** | ✅ Git aktif, branch `main` |
 
 ### Tautan demo cepat
 
@@ -43,7 +43,7 @@ Legenda: ✅ selesai & terverifikasi · 🟡 berjalan, ada batasan · ⬜ belum 
 | Bagian | Status | Catatan |
 | --- | --- | --- |
 | Hero + Three.js "data sphere" | ✅ | Shader kustom, 1.400 partikel, pita EKG 3D |
-| Urgensi / latar belakang | 🟡 | **Angka belum bersumber** — lihat §7 |
+| Urgensi / latar belakang | ✅ | Angka bersumber Riskesdas 2018 + WHO, ada daftar sitasi |
 | Perangkat + viewer GLB Three.js | ✅ | Auto-fit kamera, fallback geometris bila GLB gagal |
 | Perbandingan TeleBand vs TeleRing | ✅ | Memakai render Blender + halo SVG |
 | Video render Blender | ✅ | Turntable 120 frame / 30 fps |
@@ -187,11 +187,12 @@ Urut dari yang paling perlu diselesaikan.
    data kesehatan sungguhan.** Sebelum dipakai di luar demo: aktifkan Authentication, ubah
    aturan jadi `auth != null`, batasi akses per pengguna.
    → [database.rules.json](database.rules.json)
-2. **⚠️ Angka pada seksi Urgensi belum bersumber.** "1 dari 3", "&gt;70%" ditulis sebagai konteks
-   umum. Sebelum publikasi, ganti dengan data Riskesdas/IHME berikut sitasinya.
-   → [index.html](index.html) seksi `#urgensi`
-3. **Belum ada Git.** Direktori kerja belum berupa repositori, jadi tidak ada riwayat perubahan
-   dan tidak ada jalan mundur. Sebaiknya `git init` + commit awal.
+2. ~~**Angka pada seksi Urgensi belum bersumber.**~~ **Selesai.** Kini memakai Riskesdas 2018
+   (34,1% prevalensi hasil pengukuran; 8,4% berdasarkan diagnosis nakes) dan WHO (PTM ± tiga
+   perempat kematian), dengan daftar sumber `#sumber-urgensi` di bawah kartu statistik.
+   Kartu "Stres" sengaja dilabeli *fokus penelitian, bukan angka survei*.
+3. ~~**Belum ada Git.**~~ **Selesai.** Repositori aktif pada branch `main`, `.gitignore`
+   mengecualikan `*.blend1`, log, dan `.firebase/`.
 4. **TURN server belum ada.** Panggilan hanya memakai STUN publik. Di balik NAT ketat
    (jaringan kampus/kantor, CGNAT seluler) sambungan bisa gagal. Butuh TURN untuk pemakaian nyata.
 5. **Nilai fisiologis masih simulasi.** Mesin sirkadian di [app/js/engine.js](app/js/engine.js).
@@ -208,9 +209,9 @@ Urut dari yang paling perlu diselesaikan.
 
 Belum dikerjakan, tinggal pilih:
 
-- [ ] `git init` + commit awal, lalu commit per perubahan
+- [x] `git init` + commit awal, lalu commit per perubahan
 - [ ] Perketat aturan RTDB + aktifkan Firebase Authentication penuh
-- [ ] Ganti angka Urgensi dengan data bersumber + sitasi
+- [x] Ganti angka Urgensi dengan data bersumber + sitasi
 - [ ] Tambah TURN server (coturn sendiri atau layanan pihak ketiga)
 - [ ] Baca karakteristik GATT nyata dari perangkat BLE (Heart Rate Service `0x180D`)
 - [ ] PWA: manifest + service worker agar bisa dipasang dan jalan luring

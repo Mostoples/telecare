@@ -288,6 +288,19 @@ section{position:relative}
 .stat-card p{margin-top:11px;font-size:.885rem;color:var(--ink-2)}
 .stat-card cite{display:block;margin-top:13px;font-size:.7rem;color:var(--muted);font-style:normal;letter-spacing:.02em}
 .stat-card__spark{position:absolute;right:16px;bottom:14px;width:74px;height:34px;opacity:.5}
+.stat-card cite a{color:var(--green-600);text-decoration:none;font-weight:600}
+.stat-card cite a:hover,.stat-card cite a:focus-visible{text-decoration:underline}
+
+/* Daftar sumber acuan angka pada seksi urgensi */
+.sources{
+  margin:0 0 30px;padding:18px 22px 18px 40px;list-style:decimal;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);
+  font-size:.78rem;color:var(--ink-2);line-height:1.62;
+}
+.sources li+li{margin-top:8px}
+.sources em{font-style:italic}
+.sources a{color:var(--green-600);text-decoration:underline;text-underline-offset:2px}
+.sources a:hover,.sources a:focus-visible{color:var(--green-700)}
 
 /* ---------- 10. PRODUK ---------- */
 .product{background:#fff;border-block:1px solid var(--line)}
