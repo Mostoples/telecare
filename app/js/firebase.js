@@ -70,15 +70,26 @@
       // menggantung pada keadaan "menghubungkan" selamanya.
       setTimeout(() => { if (!FB.settled) { FB.settled = true; emit(); } }, 8000);
 
-      // Identitas anonim dipakai bila diaktifkan pada proyek; bila tidak,
-      // aplikasi tetap berjalan dengan identitas lokal.
-      FB.uid = localUid();
+      // Sejak aturan database mensyaratkan `auth != null`, identitas lokal
+      // tidak lagi cukup: setiap tulisan menunggu sesi Firebase yang sah.
+      FB.uid = null;
       if (firebase.auth) {
-        firebase.auth().onAuthStateChanged((u) => {
-          FB.uid = u ? u.uid : localUid();
-          FB.authUser = u || null;
-          emit();
+        // Janji ini selesai pada kabar pertama dari onAuthStateChanged, yaitu
+        // setelah SDK selesai memulihkan sesi tersimpan (bila ada). Menunggu
+        // kabar itu mencegah pembuatan sesi anonim baru yang tidak perlu.
+        FB._firstAuth = new Promise((resolve) => {
+          let settled = false;
+          firebase.auth().onAuthStateChanged((u) => {
+            FB.uid = u ? u.uid : null;
+            FB.authUser = u || null;
+            FB.anonymous = !!(u && u.isAnonymous);
+            if (!settled) { settled = true; resolve(u || null); }
+            emit();
+          });
         });
+        // Sesi disiapkan sejak awal agar layar pertama yang menulis tidak
+        // perlu menunggu proses masuk.
+        FB.ensureAuth().catch(() => {});
       }
     } catch (e) {
       FB.error = e.message;
@@ -89,14 +100,42 @@
     }
   };
 
-  function localUid() {
-    let id = localStorage.getItem('telecare.uid');
-    if (!id) {
-      id = 'local-' + Math.random().toString(36).slice(2, 10);
-      localStorage.setItem('telecare.uid', id);
+  /* ---------------- Sesi wajib untuk menulis ke database ----------------
+     Aturan database menolak tulisan tanpa autentikasi. Pengguna yang belum
+     masuk (termasuk mode Tamu dan tautan ?demo=) diberi sesi anonim Firebase
+     supaya alur peragaan tetap utuh tanpa membuka database ke publik.
+     -------------------------------------------------------------------- */
+  FB._authOnce = null;
+
+  FB.ensureAuth = function () {
+    if (!(window.firebase && firebase.auth)) {
+      return Promise.reject(new Error('Firebase Authentication tidak termuat.'));
     }
-    return id;
-  }
+    if (FB._authOnce) return FB._authOnce;
+
+    FB._authOnce = (FB._firstAuth || Promise.resolve(null))
+      .then((u) => {
+        const cur = firebase.auth().currentUser || u;
+        if (cur) return cur;
+        return firebase.auth().signInAnonymously().then((res) => res.user);
+      })
+      .then((user) => { FB.authFatal = null; return user; })
+      .catch((err) => {
+        FB._authOnce = null;               // biar percobaan berikutnya bisa jalan
+        const code = (err && err.code) || '';
+        if (code === 'auth/operation-not-allowed' || code === 'auth/admin-restricted-operation') {
+          FB.authFatal = 'Metode masuk Anonim belum diaktifkan pada proyek Firebase. ' +
+            'Aktifkan di Firebase Console → Authentication → Sign-in method → Anonymous.';
+        } else {
+          FB.authFatal = FB.authError(err);
+        }
+        console.warn('[TeleCare] sesi Firebase gagal:', FB.authFatal);
+        emit();
+        throw err;
+      });
+
+    return FB._authOnce;
+  };
 
   /**
    * Menunggu sambungan siap. Dipakai sebelum menulis sinyal WebRTC, karena
@@ -147,8 +186,16 @@
       .catch(() => null);
   };
 
+  /**
+   * Keluar dari akun, lalu kembali ke sesi anonim. Tanpa langkah kedua,
+   * aplikasi kehilangan hak tulis ke database setelah pengguna keluar.
+   */
   FB.signOut = function () {
-    if (FB.googleAvailable()) firebase.auth().signOut().catch(() => {});
+    FB._authOnce = null;
+    if (!FB.googleAvailable()) return Promise.resolve();
+    return firebase.auth().signOut()
+      .then(() => FB.ensureAuth().catch(() => null))
+      .catch(() => null);
   };
 
   /** Menerjemahkan kode galat Firebase Auth ke bahasa yang bisa dibaca. */
@@ -171,16 +218,23 @@
   FB.presence = function (consultId, role) {
     const r = FB.ref('consults/' + consultId + '/meta/doctorOnline');
     if (!r || role !== 'dokter') return () => {};
-    r.set(true).catch(() => {});
-    try { r.onDisconnect().set(false); } catch (e) { /* abaikan */ }
+    // Menulis kehadiran memerlukan sesi sah dan keanggotaan percakapan.
+    Chat.join(consultId).then(() => {
+      r.set(true).catch(() => {});
+      try { r.onDisconnect().set(false); } catch (e) { /* abaikan */ }
+    }).catch(() => {});
     return () => { r.set(false).catch(() => {}); };
   };
 
   FB.watchPresence = function (consultId, fn) {
     const r = FB.ref('consults/' + consultId + '/meta/doctorOnline');
     if (!r) return () => {};
-    const h = r.on('value', (s) => fn(!!s.val()));
-    return () => r.off('value', h);
+    let handler = null;
+    // Membaca pun menuntut keanggotaan, jadi bergabung dulu.
+    Chat.join(consultId).then(() => {
+      handler = r.on('value', (s) => fn(!!s.val()));
+    }).catch(() => {});
+    return () => { if (handler) r.off('value', handler); };
   };
 
   FB.ref = (path) => (FB.db ? FB.db.ref(ROOT + '/' + path) : null);
@@ -191,14 +245,59 @@
      2. CHAT — pesan konsultasi di Realtime Database
      ============================================================ */
   const Chat = {
+    /**
+     * Mendaftarkan diri sebagai peserta percakapan. Aturan database hanya
+     * mengizinkan setiap orang menulis kunci miliknya sendiri
+     * (`meta/members/$uid` dengan `$uid == auth.uid`), dan seluruh akses
+     * baca-tulis percakapan bertumpu pada daftar itu. Konsekuensinya: yang
+     * memegang ID percakapan boleh bergabung — ID itulah kapabilitasnya,
+     * karena itu dibangkitkan secara kriptografis.
+     */
+    _joined: Object.create(null),
+
+    join(consultId) {
+      return FB.ensureAuth().then((user) => {
+        const key = user.uid + '@' + consultId;
+        // Ditulis sekali per sesi; janji yang sama dipakai ulang agar pemanggil
+        // lain (kirim pesan, langganan, sinyal panggilan) cukup menunggunya.
+        if (Chat._joined[key]) return Chat._joined[key];
+        const r = FB.ref('consults/' + consultId + '/meta/members/' + user.uid);
+        if (!r) return false;
+        Chat._joined[key] = r.set(true).then(() => true).catch((e) => {
+          delete Chat._joined[key];
+          throw e;
+        });
+        return Chat._joined[key];
+      });
+    },
+
+    /** Melupakan keanggotaan yang tersimpan (dipakai saat ID ternyata tak dikenal). */
+    _forget(consultId) {
+      if (!FB.uid) return;
+      delete Chat._joined[FB.uid + '@' + consultId];
+    },
+
     /** Menuliskan metadata percakapan bila belum ada. */
     ensure(consultId, meta) {
-      const r = FB.ref('consults/' + consultId + '/meta');
-      if (!r) return Promise.resolve(false);
-      return r.transaction((cur) => (cur ? cur : {
-        doctorId: meta.doctorId, mode: meta.mode,
-        startedAt: meta.startedAt || Date.now(), status: 'active'
-      })).then(() => true).catch(() => false);
+      return Chat.join(consultId).then(() => {
+        const r = FB.ref('consults/' + consultId + '/meta');
+        if (!r) return false;
+        // `join` sudah membuat simpul meta (berisi members), jadi kondisi
+        // "belum ada" diuji lewat doctorId, bukan lewat ada/tidaknya meta.
+        // Object.assign menjaga members yang sudah tertulis.
+        return r.transaction((cur) => {
+          if (cur && cur.doctorId) return cur;
+          return Object.assign({}, cur, {
+            doctorId: meta.doctorId,
+            mode: meta.mode || 'chat',
+            startedAt: meta.startedAt || Date.now(),
+            status: 'active'
+          });
+        }).then(() => true);
+      }).catch((e) => {
+        console.warn('[TeleCare] gagal menyiapkan percakapan:', e.message);
+        return false;
+      });
     },
 
     /** Mendengarkan pesan baru. Mengembalikan fungsi pemutus langganan. */
@@ -206,33 +305,70 @@
       const r = FB.ref('consults/' + consultId + '/messages');
       if (!r) return () => {};
       const q = r.limitToLast(200);
-      const handler = q.on('child_added', (snap) => {
-        const v = snap.val();
-        if (v) onMessage(Object.assign({ key: snap.key }, v));
-      }, (err) => {
-        console.warn('[TeleCare] gagal membaca percakapan:', err.message);
+      let handler = null;
+      let stopped = false;
+      // Membaca pesan menuntut keanggotaan, jadi langganan dipasang setelah
+      // sesi siap dan diri terdaftar sebagai peserta.
+      Chat.join(consultId).then(() => {
+        if (stopped) return;
+        handler = q.on('child_added', (snap) => {
+          const v = snap.val();
+          if (v) onMessage(Object.assign({ key: snap.key }, v));
+        }, (err) => {
+          console.warn('[TeleCare] gagal membaca percakapan:', err.message);
+        });
+      }).catch((e) => {
+        console.warn('[TeleCare] tidak dapat mengikuti percakapan:', e.message);
       });
-      return () => q.off('child_added', handler);
+      return () => {
+        stopped = true;
+        if (handler) q.off('child_added', handler);
+      };
     },
 
-    /** Mengirim satu pesan. Menolak (reject) bila server tak terjangkau. */
+    /** Mengirim satu pesan. Menolak (reject) bila sesi atau server gagal. */
     send(consultId, msg) {
-      const r = FB.ref('consults/' + consultId + '/messages');
-      if (!r) return Promise.reject(new Error('Firebase belum siap'));
-      // Tulisan saat luring diantre oleh SDK dan dikirim setelah tersambung.
-      return r.push(Object.assign({ at: Date.now(), uid: FB.uid || 'anon' }, msg));
+      if (!FB.db) return Promise.reject(new Error('Firebase belum siap'));
+      // Keanggotaan wajib lebih dulu, kalau tidak aturan menolak tulisan ini.
+      return Chat.join(consultId).then(() => {
+        const r = FB.ref('consults/' + consultId + '/messages');
+        if (!r) throw new Error('Firebase belum siap');
+        // `uid` wajib sama dengan auth.uid — divalidasi oleh aturan database.
+        // Tulisan saat luring diantre oleh SDK dan dikirim setelah tersambung.
+        return r.push(Object.assign({ at: Date.now() }, msg, { uid: FB.uid }));
+      });
     },
 
-    /** Mengambil metadata percakapan (dipakai saat membuka tautan undangan). */
+    /**
+     * Mengambil metadata percakapan (dipakai saat membuka tautan undangan).
+     * Mengembalikan null bila percakapan tidak ada — ditandai oleh tidak
+     * adanya `doctorId`, sebab `join` di atas sudah membuat simpul `members`
+     * lebih dulu sehingga meta selalu "ada" secara teknis. Keanggotaan yang
+     * telanjur tertulis untuk ID tak dikenal dibersihkan kembali.
+     */
     meta(consultId) {
-      const r = FB.ref('consults/' + consultId + '/meta');
-      if (!r) return Promise.resolve(null);
-      return r.get().then((s) => (s.exists() ? s.val() : null)).catch(() => null);
+      if (!FB.db) return Promise.resolve(null);
+      return Chat.join(consultId)
+        .then(() => {
+          const r = FB.ref('consults/' + consultId + '/meta');
+          if (!r) return null;
+          return r.get().then((s) => {
+            const v = s.exists() ? s.val() : null;
+            if (v && v.doctorId) return v;
+            if (FB.uid) {
+              const mine = FB.ref('consults/' + consultId + '/meta/members/' + FB.uid);
+              if (mine) mine.remove().catch(() => {});
+              Chat._forget(consultId);
+            }
+            return null;
+          });
+        })
+        .catch(() => null);
     },
 
     setStatus(consultId, status) {
       const r = FB.ref('consults/' + consultId + '/meta/status');
-      if (r) r.set(status).catch(() => {});
+      if (r) FB.ensureAuth().then(() => r.set(status)).catch(() => {});
     }
   };
 
@@ -289,7 +425,16 @@
       };
 
       const roomRef = FB.ref('rooms/' + roomId);
-      const linked = roomRef ? await FB.waitOnline(7000) : false;
+      let linked = roomRef ? await FB.waitOnline(7000) : false;
+      // Sinyal panggilan hanya boleh ditulis peserta percakapan yang sama;
+      // tanpa sesi dan keanggotaan, aturan database menolak seluruh tulisan.
+      if (linked) {
+        try { await Chat.join(roomId); }
+        catch (e) {
+          console.warn('[TeleCare] sesi panggilan tidak sah:', e.message);
+          linked = false;
+        }
+      }
       if (!roomRef || !linked) {
         // Tanpa server sinyal, panggilan tetap menampilkan pratinjau lokal.
         if (on.onRole) on.onRole('solo');

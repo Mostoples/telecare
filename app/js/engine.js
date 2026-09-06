@@ -511,7 +511,10 @@
 
     function start(doctorId, mode) {
       const doc = D.doctor(doctorId);
-      const id = uid('cs');
+      // ID konsultasi sekaligus menjadi ID ruang panggilan dan dibagikan lewat
+      // tautan undangan, sehingga ikut menentukan hak akses — pakai pembangkit
+      // kriptografis, bukan uid() yang berbasis Math.random.
+      const id = TC.secureId('cs');
       const c = {
         id, doctorId, mode: mode || 'chat',
         startedAt: Date.now(), status: 'active', messages: []

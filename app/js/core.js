@@ -18,6 +18,29 @@ window.TC = window.TC || {};
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
   const uid = (p) => (p || 'id') + '-' + Math.random().toString(36).slice(2, 9);
 
+  /**
+   * Pengenal acak kriptografis (± 128 bit) untuk hal yang ikut menentukan
+   * hak akses — mis. ID konsultasi, yang sekaligus menjadi ID ruang panggilan
+   * dan dibagikan lewat tautan undangan. `uid()` memakai Math.random dan
+   * terlalu mudah diterka untuk keperluan itu.
+   */
+  function secureId(p) {
+    const pre = (p || 'id') + '-';
+    const c = window.crypto || window.msCrypto;
+    if (c && c.getRandomValues) {
+      const b = new Uint8Array(16);
+      c.getRandomValues(b);
+      let out = '';
+      for (let i = 0; i < b.length; i++) out += b[i].toString(36).padStart(2, '0');
+      return pre + out.slice(0, 26);
+    }
+    // Cadangan bila Web Crypto tidak tersedia; dicatat agar tidak lolos diam-diam.
+    console.warn('[TeleCare] Web Crypto tidak tersedia, ID memakai Math.random.');
+    let out = '';
+    while (out.length < 26) out += Math.random().toString(36).slice(2);
+    return pre + out.slice(0, 26);
+  }
+
   // escape agar teks pengguna tidak pernah ditafsirkan sebagai HTML
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
@@ -495,7 +518,7 @@ window.TC = window.TC || {};
 
   /* ---------------- 6. EKSPOR ---------------- */
   Object.assign(TC, {
-    $, $$, clamp, lerp, rnd, rint, pick, uid, esc, icon, rupiah,
+    $, $$, clamp, lerp, rnd, rint, pick, uid, secureId, esc, icon, rupiah,
     pad2, hhmm, fullDate, shortDate, relTime, countdown, greeting, initials,
     DAYS, MONTHS,
     Store, Router,
