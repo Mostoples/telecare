@@ -10,6 +10,7 @@
       "**/node_modules/**",
       "blender/**",
       "tools/**",
+      "build/**",
       "functions/**",
       "*.blend",
       "*.blend1",
