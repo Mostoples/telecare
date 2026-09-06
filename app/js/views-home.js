@@ -51,6 +51,18 @@
     };
   }
 
+  /**
+   * Penanda asal angka. Dibedakan dengan jelas karena keduanya tampak sama
+   * di layar: nilai simulasi bergerak semulus nilai sensor, jadi tanpa
+   * penanda ini tidak ada cara membedakannya.
+   */
+  function sumberChip() {
+    const dariPerangkat = TC.Vitals.source && TC.Vitals.source() === 'device';
+    return dariPerangkat
+      ? `<span class="chip chip--g"><i class="dotlive"></i> dari perangkat</span>`
+      : `<span class="chip chip--a">${icon('info')} simulasi</span>`;
+  }
+
   function vitalsGrid() {
     const v = TC.Vitals.snapshot();
     return `<div class="vital-grid">
@@ -140,7 +152,7 @@
 
       <div class="section-title">${icon('heart')} Vital terkini
         <span class="push"></span>
-        <span class="chip chip--g"><i class="dotlive"></i> langsung</span></div>
+        <span data-sumber>${sumberChip()}</span></div>
       ${vitalsGrid()}
 
       ${dev && dev.connected ? `
@@ -270,6 +282,8 @@
 
     const un = TC.Vitals.subscribe(() => {
       paintVitals(root);
+      const sc = $('[data-sumber]', root);
+      if (sc) sc.innerHTML = sumberChip();
       const rr = $('[data-rr]', root), hv = $('[data-hrv]', root);
       if (rr) rr.textContent = Math.round(60000 / TC.Vitals.state.hr) + ' ms';
       if (hv) hv.textContent = TC.Vitals.state.hrv + ' ms';

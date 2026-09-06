@@ -66,8 +66,8 @@ Legenda: ✅ selesai & terverifikasi · 🟡 berjalan, ada batasan · ⬜ belum 
 | **Masuk sebagai Tamu** | ✅ | Pilih peran dulu, lalu data contoh disiapkan |
 | **4 peran** | ✅ | pasien · dokter · admin-faskes · admin |
 | Hub perangkat AIoT | ✅ | 6 jenis perangkat, pindai, sinkron buffer, lupakan |
-| Web Bluetooth (perangkat nyata) | 🟡 | Jalan bila peramban mendukung; selain itu daftar simulasi |
-| Vital + EKG langsung | 🟡 | **Nilai disimulasikan** (sirkadian), bukan sensor nyata |
+| Web Bluetooth (perangkat nyata) | 🟡 | Pembacaan GATT lengkap (5 service); parser terverifikasi, **belum diuji perangkat fisik** |
+| Vital + EKG langsung | 🟡 | Nilai dari perangkat bila tersambung, selain itu simulasi sirkadian — asalnya ditandai di beranda |
 | Sesi makan 4 titik | ✅ | Kamera → koreksi → kurva respons |
 | Analisis (vital/gizi/respons) | ✅ | |
 | **Chat via Firebase RTDB** | ✅ | Tersinkron antarperangkat, ada mirror lokal luring; akses per peserta |
@@ -207,6 +207,13 @@ Supaya klaim "sudah jalan" bisa diperiksa ulang:
 - **Sapuan rute.** Chrome headless `--dump-dom` ke tiap rute, dicari string `Terjadi kesalahan`
   (penanda layar gagal) dan DOM yang terlalu pendek. Dijalankan untuk keempat peran; 9 rute
   produksi bersih setelah pengetatan keamanan.
+- **Parser GATT (42 pemeriksaan).** Diuji dengan vektor byte yang disusun menurut spesifikasi
+  Bluetooth SIG, bukan perangkat: HR uint8 dan uint16 little-endian, tiga keadaan kontak kulit,
+  bidang energi yang harus dilewati sebelum interval RR, RR bersatuan 1/1024 detik, RMSSD,
+  baterai di luar rentang, SFLOAT/FLOAT IEEE-11073 termasuk pola NaN, suhu Fahrenheit→Celsius,
+  tekanan kPa→mmHg, denyut nadi yang bergeser 7 bita bila cap waktu ada, dan ketahanan terhadap
+  buffer kosong maupun null. Kesalahan offset pada bidang opsional adalah bug klasik di sini,
+  jadi kasus itu diuji khusus.
 - **Aturan RTDB (41 pemeriksaan, semua sesuai harapan).** Dua sesi anonim sungguhan dibuat lewat
   REST Identity Toolkit, lalu izin diuji pada REST Realtime Database: tanpa auth semua ditolak
   (401); tulis di luar `telecare/demo` ditolak; bukan-peserta tidak dapat membaca percakapan,
@@ -258,8 +265,12 @@ Urut dari yang paling perlu diselesaikan.
    **Yang belum ada: server TURN sungguhan beserta kredensialnya** — itu perlu VPS (coturn) atau
    layanan berbayar, tidak dapat disediakan dari sisi kode. Sampai itu diisi, panggilan di balik
    NAT ketat tetap gagal, hanya sekarang pesan galatnya menyebut sebabnya.
-5. **Nilai fisiologis masih simulasi.** Mesin sirkadian di [app/js/engine.js](app/js/engine.js).
-   Integrasi sensor nyata baru sebatas pemindaian Web Bluetooth — belum membaca karakteristik GATT.
+5. **Nilai fisiologis masih simulasi bila tidak ada perangkat.** Mesin sirkadian di
+   [app/js/engine.js](app/js/engine.js) tetap menjadi bawaan. Pembacaan GATT sungguhan sudah ada
+   di [app/js/ble.js](app/js/ble.js) (Heart Rate, Battery, Thermometer, Blood Pressure, Pulse
+   Oximeter) dan parsernya terverifikasi 42/42 terhadap vektor byte sesuai spesifikasi.
+   **Belum diuji dengan perangkat fisik** — tidak ada wearable BLE di lingkungan pengembangan ini,
+   jadi jalur `connect()`/notifikasi hanya terbukti benar secara struktur, bukan di lapangan.
 6. **Balasan dokter masih otomatis.** Pola kata kunci di `REPLY_RULES`. Sudah dilabeli jelas
    di dalam aplikasi, tetapi tetap perlu diingat saat mendemokan ke pihak luar.
 7. **Data pasien/faskes bersifat contoh.** `PATIENTS` dan `FACILITIES` di
@@ -285,7 +296,8 @@ Belum dikerjakan, tinggal pilih:
 - [x] Ganti angka Urgensi dengan data bersumber + sitasi
 - [x] Dukungan TURN + diagnostik konektivitas (server & kredensialnya masih perlu disediakan)
 - [x] PWA: manifest + service worker agar bisa dipasang dan jalan luring
-- [ ] Baca karakteristik GATT nyata dari perangkat BLE (Heart Rate Service `0x180D`)
+- [x] Baca karakteristik GATT nyata dari perangkat BLE (Heart Rate `0x180D` + 4 service lain)
+- [ ] Uji pembacaan GATT dengan wearable BLE sungguhan
 
 - [ ] Halaman detail pasien untuk dokter: riwayat konsultasi + catatan klinis tersimpan
 - [ ] Notifikasi push (FCM) untuk eskalasi kritis
@@ -307,6 +319,7 @@ app/js/core.js                               util, store, router, UI, grafik
 app/js/data.js                               perangkat, dokter, makanan, PERAN, faskes, pasien
 app/js/engine.js                             simulasi vital, hub perangkat, sesi makan, konsultasi
 app/js/rtc-config.js                         server ICE/TURN (diisi pemilik proyek)
+app/js/ble.js                                pembacaan GATT + parser IEEE-11073
 app/js/firebase.js                           chat RTDB + Google Sign-In + WebRTC
 app/manifest.webmanifest · app/sw.js         PWA: installable + luring
 app/assets/icons/                            ikon PWA (dibangun tools/build_icons.py)

@@ -143,10 +143,40 @@ dan **balasan otomatis berhenti** begitu dokter sungguhan hadir — kehadiran it
 | --- | --- |
 | Onboarding & akun | Layar pembuka, daftar, masuk, pemulihan kata sandi, pelengkapan profil |
 | Hub perangkat AIoT | Pindai, pasangkan, sinkronkan buffer, putuskan, lupakan — TeleBand, TeleRing, TeleStrap, TeleCuff, TeleScale, TelePatch |
+| Perangkat BLE nyata | Pembacaan karakteristik GATT standar lewat Web Bluetooth — lihat di bawah |
 | Pemantauan | Vital langsung, EKG bergulir, tren 7 hari, indeks stres, langkah, tidur |
 | Sesi makan | Kamera → pengenalan makanan → koreksi → 4 titik pengukuran → ringkasan kurva respons |
 | Telemedisin | Cari dokter, profil, chat, panggilan suara/video, janji temu, riwayat |
 | Profil | Informasi pribadi, tujuan & target gizi, kalibrasi tekanan darah, pengaturan, ekspor data |
+
+### Perangkat BLE nyata — pembacaan GATT
+
+[app/js/ble.js](app/js/ble.js) membaca karakteristik standar Bluetooth SIG, jadi perangkat
+kesehatan mana pun yang mematuhi profil berikut dapat dipakai tanpa penyesuaian khusus:
+
+| Service | Karakteristik | Yang dibaca |
+| --- | --- | --- |
+| `0x180D` Heart Rate | `0x2A37` Heart Rate Measurement | detak jantung, interval RR, status kontak kulit |
+| `0x180F` Battery | `0x2A19` Battery Level | baterai (dibaca + diikuti bila didukung) |
+| `0x1809` Health Thermometer | `0x2A1C` Temperature Measurement | suhu (Celsius atau Fahrenheit) |
+| `0x1810` Blood Pressure | `0x2A35` Blood Pressure Measurement | sistol, diastol, MAP, denyut nadi |
+| `0x1822` Pulse Oximeter | `0x2A5F` PLX Continuous | SpO₂ dan denyut nadi |
+
+Service yang tidak dimiliki perangkat dilewati tanpa menggagalkan sambungan — wearable umumnya
+hanya menyediakan sebagian. HRV dihitung sebagai **RMSSD** dari interval RR.
+
+Suhu dan tekanan darah memakai format titik-mengambang desimal **IEEE-11073** (`FLOAT` 32-bit dan
+`SFLOAT` 16-bit): mantissa dengan eksponen basis sepuluh, sehingga nilai seperti 36,7 tidak
+kehilangan ketepatan seperti pada biner basis dua. Pola bit khusus (`NaN`, `NRes`, ±`INFINITY`)
+dikembalikan sebagai `null`, bukan dihitung sebagai angka.
+
+Ketika perangkat sungguhan tersambung, `Vitals.ingest()` mengambil alih dan simulasi berhenti
+menimpa angka. Saat perangkat lepas (`gattserverdisconnected`), `Vitals.releaseDevice()`
+mengembalikannya ke simulasi — tanpa itu layar akan membeku pada angka terakhir dan tampak
+seolah masih hidup. Beranda menandai asalnya: **dari perangkat** atau **simulasi**.
+
+Web Bluetooth hanya tersedia di peramban berbasis Chromium pada origin aman. Di Safari dan
+Firefox aplikasi tetap memakai daftar perangkat simulasi.
 
 ### PWA — dapat dipasang dan jalan luring
 

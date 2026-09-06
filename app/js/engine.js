@@ -81,15 +81,34 @@
     return {
       state, hist, start, stop, step,
       subscribe(fn) { subs.add(fn); return () => subs.delete(fn); },
-      /** Dipanggil ketika data sungguhan datang dari perangkat. */
+      /**
+       * Dipanggil ketika data sungguhan datang dari perangkat. Selama
+       * `source` bernilai 'device', step() berhenti membangkitkan angka
+       * sehingga nilai perangkat tidak tertimpa simulasi.
+       */
       ingest(v) {
         state.source = 'device';
-        ['hr', 'spo2', 'temp', 'sys', 'dia', 'stress', 'glucose'].forEach((k) => {
-          if (typeof v[k] === 'number') state[k] = v[k];
+        ['hr', 'spo2', 'temp', 'sys', 'dia', 'stress', 'glucose', 'hrv'].forEach((k) => {
+          if (typeof v[k] === 'number' && isFinite(v[k])) state[k] = v[k];
         });
         state.updatedAt = Date.now();
-        subs.forEach((fn) => fn(state));
+        subs.forEach((fn) => { try { fn(state); } catch (e) { /* abaikan */ } });
       },
+
+      /**
+       * Kembali ke simulasi setelah perangkat sungguhan lepas. Tanpa ini
+       * layar vital akan membeku pada angka terakhir dari perangkat dan
+       * tampak seolah masih hidup.
+       */
+      releaseDevice() {
+        if (state.source !== 'device') return;
+        state.source = 'sim';
+        state.updatedAt = Date.now();
+        subs.forEach((fn) => { try { fn(state); } catch (e) { /* abaikan */ } });
+      },
+
+      /** 'sim' atau 'device' — dipakai UI untuk menandai asal angka. */
+      source() { return state.source; },
       snapshot() {
         return {
           hr: Math.round(state.hr), spo2: Math.round(state.spo2),
@@ -221,11 +240,8 @@
 
     /** Mencoba pemindaian Web Bluetooth sungguhan bila tersedia. */
     async function realScan() {
-      if (!navigator.bluetooth) throw new Error('unsupported');
-      const dev = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: ['heart_rate', 'battery_service']
-      });
+      if (!TC.Ble || !TC.Ble.supported()) throw new Error('unsupported');
+      const dev = await TC.Ble.requestDevice();
       return {
         id: uid('dev'),
         type: 'band',
@@ -234,6 +250,79 @@
         rssi: 4, battery: null, supported: true, real: true, ref: dev
       };
     }
+
+    /* ---------------- sambungan GATT sungguhan ----------------
+       Satu perangkat nyata aktif pada satu waktu; kuncinya adalah id
+       perangkat pada store, supaya pemutusan dapat menyasar dengan tepat.
+       ------------------------------------------------------- */
+    const sesiBle = new Map();
+
+    /**
+     * Menyambungkan perangkat BLE sungguhan lalu mengalirkan nilainya ke
+     * Vitals. Selama tersambung, simulasi berhenti menimpa angka.
+     */
+    async function connectReal(dev, ref) {
+      if (!TC.Ble || !ref) return null;
+      const sesi = await TC.Ble.connect(ref, {
+        onData(v) {
+          Vitals.ingest(v);
+          // Kontak kulit longgar membuat angka tidak dapat dipercaya, jadi
+          // pengguna diberi tahu alih-alih dibiarkan menduga.
+          if (v.kontakKulit === false) {
+            Store.notify('Sensor tidak menempel',
+              'Perangkat melaporkan sensor lepas dari kulit — nilai bisa tidak akurat.', 'warn');
+          }
+        },
+        onBattery(p) {
+          Store.update((s) => {
+            const d = s.devices.find((x) => x.id === dev.id);
+            if (d) d.battery = p;
+          });
+        },
+        onDisconnect() {
+          sesiBle.delete(dev.id);
+          Vitals.releaseDevice();
+          Store.update((s) => {
+            const d = s.devices.find((x) => x.id === dev.id);
+            if (d) d.connected = false;
+          });
+          Store.notify('Perangkat terputus',
+            dev.name + ' lepas dari Bluetooth. Vital kembali ke simulasi.', 'warn');
+        },
+        onLog(m) { console.info('[TeleCare BLE]', m); }
+      });
+
+      sesiBle.set(dev.id, sesi);
+
+      Store.update((s) => {
+        const d = s.devices.find((x) => x.id === dev.id);
+        if (!d) return;
+        d.services = sesi.layanan;
+        if (sesi.batteryAwal != null) d.battery = sesi.batteryAwal;
+      });
+
+      if (!sesi.layanan.length) {
+        Store.notify('Tidak ada layanan yang dikenali',
+          'Perangkat tersambung tetapi tidak menyediakan profil kesehatan standar. ' +
+          'Vital tetap memakai simulasi.', 'warn');
+      } else {
+        Store.notify('Membaca data perangkat',
+          'Layanan aktif: ' + sesi.layanan.join(', '), 'ok');
+      }
+      return sesi;
+    }
+
+    /** Memutus sambungan GATT bila perangkat itu memang perangkat nyata. */
+    function stopReal(id) {
+      const sesi = sesiBle.get(id);
+      if (!sesi) return false;
+      sesi.stop();
+      sesiBle.delete(id);
+      Vitals.releaseDevice();
+      return true;
+    }
+
+    const isReal = (id) => sesiBle.has(id);
 
     function pair(found) {
       const t = D.deviceType(found.type);
@@ -251,10 +340,21 @@
       });
       Store.notify('Perangkat tersambung', dev.name + ' · ' + dev.code, 'ok');
       startBuffer();
+
+      // Perangkat sungguhan disambungkan ke GATT-nya; kegagalan tidak
+      // membatalkan pemasangan, aplikasi hanya kembali memakai simulasi.
+      if (found.real && found.ref) {
+        connectReal(dev, found.ref).catch((e) => {
+          console.warn('[TeleCare] GATT gagal:', e && e.message);
+          Store.notify('Gagal membaca perangkat',
+            (e && e.message) || 'Sambungan GATT gagal. Vital memakai simulasi.', 'warn');
+        });
+      }
       return dev;
     }
 
     function disconnect(id) {
+      stopReal(id);
       Store.update((s) => {
         const d = s.devices.find((x) => x.id === id);
         if (d) d.connected = false;
@@ -271,6 +371,7 @@
     }
 
     function forget(id) {
+      stopReal(id);
       Store.update((s) => {
         s.devices = s.devices.filter((d) => d.id !== id);
         if (s.activeDeviceId === id) s.activeDeviceId = s.devices.length ? s.devices[0].id : null;
@@ -282,6 +383,12 @@
       if (syncTimer) return;
       syncTimer = setInterval(() => {
         const s = Store.state;
+        // Perangkat sungguhan mengalirkan nilai langsung lewat notifikasi GATT,
+        // jadi tidak ada tumpukan yang menunggu disinkronkan. Menambah buffer
+        // di sini akan menampilkan antrean yang tidak pernah ada.
+        const adaNyataTersambung = s.devices.some((d) => d.connected && isReal(d.id));
+        if (adaNyataTersambung) return;
+
         if (!s.devices.some((d) => d.connected)) {
           // tetap mengukur meski terputus — persis seperti perangkat asli
           Store.update((st) => { st.pendingSamples += TC.rint(1, 3); });
@@ -322,7 +429,8 @@
     return {
       simulateScan, realScan, pair, disconnect, reconnect, forget, sync,
       startBuffer, statusText, makeCode,
-      hasWebBluetooth: () => !!navigator.bluetooth
+      connectReal, stopReal, isReal,
+      hasWebBluetooth: () => !!(TC.Ble && TC.Ble.supported())
     };
   })();
 
