@@ -633,6 +633,7 @@
   /* ---------------- 8. PENGATURAN ---------------- */
   function viewSettings() {
     const s = Store.state.settings;
+    const t = s.turn || {};
     TC.topbar('Pengaturan');
     setView(`
       <div class="section-title">${icon('clock')} Mode purwarupa</div>
@@ -651,6 +652,43 @@
           <input type="checkbox" id="tNotif" ${s.notif ? 'checked' : ''}
                  style="margin-left:auto;width:20px;height:20px;accent-color:var(--green-500)">
         </label>
+      </div>
+
+      <div class="section-title">${icon('video')} Panggilan (TURN)</div>
+      <div class="card">
+        <p class="small" style="color:var(--ink-2)">Panggilan memakai STUN publik. Di balik NAT
+        ketat — jaringan kampus atau kantor berfirewall, dan CGNAT operator seluler — STUN saja
+        tidak cukup dan panggilan bisa gagal tersambung. Server TURN merelai media untuk kasus itu.</p>
+
+        <div id="turnStatus" class="mt"></div>
+
+        <label class="field mt">
+          <span>Alamat server TURN</span>
+          <input id="turnUrls" type="text" inputmode="url" autocomplete="off" spellcheck="false"
+                 placeholder="turn:turn.contoh.id:3478?transport=udp"
+                 value="${esc(t.urls || '')}">
+          <small>Boleh beberapa, dipisahkan tanda koma.</small>
+        </label>
+        <label class="field mt">
+          <span>Nama pengguna</span>
+          <input id="turnUser" type="text" autocomplete="off" spellcheck="false"
+                 value="${esc(t.username || '')}">
+        </label>
+        <label class="field mt">
+          <span>Kata sandi</span>
+          <input id="turnPass" type="password" autocomplete="new-password"
+                 value="${esc(t.credential || '')}">
+          <small>Tersimpan di peramban ini saja, tidak dikirim ke server TeleCare.</small>
+        </label>
+
+        <div class="duo mt">
+          <button class="btn btn--primary" data-turn-save>${icon('check')} Simpan</button>
+          <button class="btn btn--ghost" data-turn-test>${icon('sync')} Uji konektivitas</button>
+        </div>
+        <button class="btn btn--ghost btn--block mt" data-turn-clear>${icon('trash')} Kosongkan TURN</button>
+        <pre id="turnHasil" class="mono small mt" style="display:none;white-space:pre-wrap;
+             background:var(--canvas);border:1px solid var(--line);border-radius:12px;padding:12px;
+             color:var(--ink-2);margin:0"></pre>
       </div>
 
       <div class="section-title">${icon('shield')} Data di perangkat ini</div>
@@ -676,8 +714,84 @@
       Store.update((st) => { st.settings.notif = e.target.checked; });
     };
 
+    /* ---------------- TURN ---------------- */
+    function gambarStatusTurn() {
+      const el = $('#turnStatus');
+      if (!el || !TC.RTC) return;
+      const ada = TC.RTC.turnTersedia();
+      const dariPengguna = !!TC.RTC.turnDariPengaturan();
+      const dariEndpoint = !!TC.RTC.config().fetchFrom;
+      const sumber = dariPengguna ? 'dari pengaturan perangkat ini'
+                   : dariEndpoint ? 'dari penerbit kredensial sementara'
+                   : 'dari app/js/rtc-config.js';
+      el.innerHTML = ada
+        ? `<span class="chip chip--g"><i class="dotlive"></i> TURN dikonfigurasi ${esc(sumber)}</span>`
+        : `<span class="chip chip--a">${icon('alert')} Belum ada TURN — hanya STUN</span>`;
+    }
+    gambarStatusTurn();
+
+    $('[data-turn-save]').onclick = () => {
+      const urls = $('#turnUrls').value.trim();
+      const username = $('#turnUser').value.trim();
+      const credential = $('#turnPass').value;
+      if (urls && !/^(turn|turns):/i.test(urls)) {
+        toast('Alamat TURN harus dimulai dengan turn: atau turns:');
+        return;
+      }
+      Store.update((st) => {
+        st.settings.turn = urls ? { urls, username, credential } : null;
+      });
+      gambarStatusTurn();
+      toast(urls ? 'Pengaturan TURN disimpan.' : 'TURN dikosongkan.');
+    };
+
+    $('[data-turn-clear]').onclick = () => {
+      Store.update((st) => { st.settings.turn = null; });
+      $('#turnUrls').value = '';
+      $('#turnUser').value = '';
+      $('#turnPass').value = '';
+      $('#turnHasil').style.display = 'none';
+      gambarStatusTurn();
+      toast('TURN dikosongkan.');
+    };
+
+    $('[data-turn-test]').onclick = async (e) => {
+      const btn = e.currentTarget;
+      const box = $('#turnHasil');
+      btn.disabled = true;
+      const semula = btn.innerHTML;
+      btn.innerHTML = `${icon('sync')} Menguji…`;
+      box.style.display = 'block';
+      box.textContent = 'Mengumpulkan kandidat ICE…';
+      try {
+        const d = await TC.RTC.diagnose(9000);
+        if (!d.didukung) { box.textContent = d.alasan; return; }
+        box.textContent =
+          `${d.ringkasan}\n\n` +
+          `server ICE   : ${d.jumlahServer}\n` +
+          `host         : ${d.jenis.host}   (jaringan lokal)\n` +
+          `srflx        : ${d.jenis.srflx}   (alamat publik via STUN)\n` +
+          `relay        : ${d.jenis.relay}   (via TURN)` +
+          (d.protokolRelay.length ? `\nprotokol relay: ${d.protokolRelay.join(', ')}` : '');
+      } catch (err) {
+        box.textContent = 'Uji gagal: ' + (err && err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = semula;
+      }
+    };
+
     $('[data-export]').onclick = () => {
-      const blob = new Blob([JSON.stringify(Store.state, null, 2)], { type: 'application/json' });
+      // Kata sandi TURN sengaja tidak diikutkan: berkas ekspor sering dibagikan
+      // atau diunggah, sedangkan kredensial itu memberi hak memakai bandwidth
+      // server relai.
+      const salinan = JSON.parse(JSON.stringify(Store.state));
+      if (salinan.settings && salinan.settings.turn) {
+        salinan.settings.turn = Object.assign({}, salinan.settings.turn, {
+          credential: salinan.settings.turn.credential ? '(dihapus dari ekspor)' : ''
+        });
+      }
+      const blob = new Blob([JSON.stringify(salinan, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'telecare-data.json';

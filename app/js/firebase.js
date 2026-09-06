@@ -398,18 +398,152 @@
      (menulis answer). Kandidat ICE dipertukarkan lewat dua daftar
      terpisah agar tidak saling menimpa.
      ============================================================ */
-  const ICE = {
-    iceServers: [
-      { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
-      { urls: ['stun:stun.services.mozilla.com'] }
-    ],
-    iceCandidatePoolSize: 8
-  };
+  const STUN_CADANGAN = [
+    'stun:stun.l.google.com:19302',
+    'stun:stun1.l.google.com:19302',
+    'stun:stun.services.mozilla.com'
+  ];
 
   const RTC = {
     supported() {
       return !!(window.RTCPeerConnection && navigator.mediaDevices &&
                 navigator.mediaDevices.getUserMedia);
+    },
+
+    /** Konfigurasi mentah dari app/js/rtc-config.js, bila berkas itu dimuat. */
+    config() {
+      return window.TELECARE_RTC || {};
+    },
+
+    /**
+     * TURN yang diisi pengguna lewat Profil → Pengaturan → Panggilan.
+     * Tersimpan di perangkat itu saja dan menimpa bawaan proyek, supaya
+     * penguji dapat memakai server sendiri tanpa mengubah kode.
+     */
+    turnDariPengaturan() {
+      const st = TC.Store && TC.Store.state;
+      const t = st && st.settings && st.settings.turn;
+      if (!t || !t.urls) return null;
+      const urls = String(t.urls).split(',').map((u) => u.trim()).filter(Boolean);
+      if (!urls.length) return null;
+      const s = { urls };
+      if (t.username) s.username = t.username;
+      if (t.credential) s.credential = t.credential;
+      return s;
+    },
+
+    /**
+     * Mengambil kredensial TURN sementara dari endpoint penerbit, bila diatur.
+     * Kegagalan tidak menghentikan panggilan — hanya menurunkannya ke STUN.
+     */
+    async turnDariEndpoint() {
+      const url = RTC.config().fetchFrom;
+      if (!url) return [];
+      try {
+        const res = await fetch(url, { credentials: 'omit' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const j = await res.json();
+        if (Array.isArray(j.iceServers)) return j.iceServers;
+        if (j.urls) return [j];
+        return [];
+      } catch (e) {
+        console.warn('[TeleCare] penerbit TURN tidak terjangkau:', e.message);
+        return [];
+      }
+    },
+
+    /** Daftar TURN yang berlaku, menurut urutan prioritas. */
+    async turnAktif() {
+      const dariPengaturan = RTC.turnDariPengaturan();
+      if (dariPengaturan) return [dariPengaturan];
+      const dariEndpoint = await RTC.turnDariEndpoint();
+      if (dariEndpoint.length) return dariEndpoint;
+      const statis = RTC.config().servers;
+      return Array.isArray(statis) ? statis.filter((s) => s && s.urls) : [];
+    },
+
+    /** Benar bila ada TURN yang dapat dipakai (tanpa menghubunginya). */
+    turnTersedia() {
+      if (RTC.turnDariPengaturan()) return true;
+      if (RTC.config().fetchFrom) return true;
+      const s = RTC.config().servers;
+      return !!(Array.isArray(s) && s.some((x) => x && x.urls));
+    },
+
+    /** Konfigurasi RTCPeerConnection yang sudah lengkap. */
+    async rtcConfig() {
+      const cfg = RTC.config();
+      const stun = Array.isArray(cfg.stun) && cfg.stun.length ? cfg.stun : STUN_CADANGAN;
+      const turn = await RTC.turnAktif();
+      const out = {
+        iceServers: [{ urls: stun }].concat(turn),
+        iceCandidatePoolSize: 8
+      };
+      // 'relay' membuang kandidat host dan srflx, jadi media dipaksa lewat TURN.
+      if (cfg.paksaRelay && turn.length) out.iceTransportPolicy = 'relay';
+      return out;
+    },
+
+    /**
+     * Menguji konektivitas ICE tanpa membuka kamera maupun mikrofon:
+     * satu RTCPeerConnection berisi data channel kosong dikumpulkan
+     * kandidatnya, lalu jenisnya dihitung.
+     *
+     *   host  — alamat di jaringan lokal
+     *   srflx — alamat publik hasil STUN
+     *   relay — jalur lewat TURN; hanya ini yang menembus NAT ketat
+     */
+    async diagnose(timeoutMs) {
+      if (!window.RTCPeerConnection) {
+        return { didukung: false, alasan: 'Peramban ini tidak mendukung WebRTC.' };
+      }
+      const cfg = await RTC.rtcConfig();
+      const pc = new RTCPeerConnection(cfg);
+      const jenis = { host: 0, srflx: 0, prflx: 0, relay: 0 };
+      const protokolRelay = new Set();
+
+      try {
+        pc.createDataChannel('probe');
+        await new Promise((resolve) => {
+          let selesai = false;
+          const tutup = () => { if (!selesai) { selesai = true; resolve(); } };
+
+          pc.onicecandidate = (ev) => {
+            if (!ev.candidate) { tutup(); return; }
+            const c = ev.candidate;
+            const t = c.type || (c.candidate.split(' ')[7]);
+            if (t && jenis[t] !== undefined) jenis[t]++;
+            if (t === 'relay') protokolRelay.add(c.protocol || '?');
+          };
+          pc.onicegatheringstatechange = () => {
+            if (pc.iceGatheringState === 'complete') tutup();
+          };
+
+          pc.createOffer()
+            .then((o) => pc.setLocalDescription(o))
+            .catch((e) => { console.warn('[TeleCare] diagnosa ICE gagal:', e.message); tutup(); });
+
+          setTimeout(tutup, timeoutMs || 8000);
+        });
+      } finally {
+        try { pc.close(); } catch (e) { /* abaikan */ }
+      }
+
+      const adaTurn = RTC.turnTersedia();
+      return {
+        didukung: true,
+        jenis,
+        turnDikonfigurasi: adaTurn,
+        relayBerhasil: jenis.relay > 0,
+        protokolRelay: Array.from(protokolRelay),
+        jumlahServer: cfg.iceServers.length,
+        // Kesimpulan yang bisa langsung ditampilkan ke pengguna.
+        ringkasan: !adaTurn
+          ? 'TURN belum dikonfigurasi — panggilan dapat gagal di balik NAT ketat.'
+          : (jenis.relay > 0
+              ? 'TURN bekerja: kandidat relay diperoleh, panggilan dapat menembus NAT ketat.'
+              : 'TURN dikonfigurasi tetapi tidak menghasilkan kandidat relay — periksa alamat, port, dan kredensial.')
+      };
     },
 
     /**
@@ -430,7 +564,7 @@
       });
       if (on.onLocal) on.onLocal(local);
 
-      const pc = new RTCPeerConnection(ICE);
+      const pc = new RTCPeerConnection(await RTC.rtcConfig());
       local.getTracks().forEach((t) => pc.addTrack(t, local));
 
       const remote = new MediaStream();
@@ -514,6 +648,36 @@
   function session(pc, local, remote, roomRef, offs, role) {
     return {
       pc, local, remote, role,
+
+      /**
+       * Jalur yang sungguh dipakai setelah tersambung, dibaca dari getStats().
+       * Mengembalikan mis. { lokal: 'relay', jauh: 'srflx', viaTurn: true }.
+       * Berguna untuk membuktikan TURN benar-benar terpakai, bukan sekadar
+       * dikonfigurasi.
+       */
+      async jalurTerpakai() {
+        try {
+          const stats = await pc.getStats();
+          let pair = null;
+          const kandidat = new Map();
+          stats.forEach((r) => {
+            if (r.type === 'local-candidate' || r.type === 'remote-candidate') {
+              kandidat.set(r.id, r);
+            }
+            if (r.type === 'candidate-pair' && (r.selected || r.state === 'succeeded')) {
+              if (!pair || r.selected) pair = r;
+            }
+          });
+          if (!pair) return null;
+          const l = kandidat.get(pair.localCandidateId);
+          const j = kandidat.get(pair.remoteCandidateId);
+          const lt = l && (l.candidateType || l.type);
+          const jt = j && (j.candidateType || j.type);
+          return { lokal: lt || null, jauh: jt || null, viaTurn: lt === 'relay' || jt === 'relay' };
+        } catch (e) {
+          return null;
+        }
+      },
       toggleAudio(on) { local.getAudioTracks().forEach((t) => { t.enabled = on; }); },
       toggleVideo(on) { local.getVideoTracks().forEach((t) => { t.enabled = on; }); },
       async switchCamera() {

@@ -199,8 +199,73 @@ menjadi penerima.
 2. Tekan **Salin tautan undangan**, buka tautan itu di perangkat atau peramban lain.
 3. Izinkan kamera dan mikrofon di kedua sisi — sambungan terbentuk langsung antarperangkat.
 
-Panggilan memerlukan HTTPS (terpenuhi di Hosting) atau `localhost`. Di balik NAT ketat,
-STUN saja mungkin tidak cukup — pemakaian nyata memerlukan server TURN.
+Panggilan memerlukan HTTPS (terpenuhi di Hosting) atau `localhost`.
+
+#### TURN — menembus NAT ketat
+
+STUN hanya memberi tahu setiap sisi alamat publiknya sendiri. Di balik NAT ketat — jaringan
+kampus/kantor dengan firewall keluar, atau CGNAT operator seluler — kedua sisi tetap tidak dapat
+saling menjangkau dan panggilan gagal. Server TURN merelai media untuk kasus itu.
+
+Konfigurasi ada di [app/js/rtc-config.js](app/js/rtc-config.js):
+
+| Kunci | Isi |
+| --- | --- |
+| `stun` | daftar server STUN (sudah terisi, publik) |
+| `servers` | kredensial TURN statis — **hanya untuk uji tertutup** |
+| `fetchFrom` | endpoint penerbit kredensial sementara (cara yang disarankan) |
+| `paksaRelay` | memaksa media lewat TURN, untuk membuktikan TURN benar-benar bekerja |
+
+Urutan prioritas: pengaturan pengguna → `fetchFrom` → `servers`.
+
+**Kredensial TURN tidak boleh dititipkan di repositori publik.** Kredensial itu memberi hak
+memakai bandwidth server, jadi siapa pun yang membaca berkasnya dapat memakainya. Pakailah
+kredensial sementara: coturn dapat menerbitkan username/password berumur pendek lewat mekanisme
+*TURN REST API*, dan `fetchFrom` diisi alamat endpoint yang menerbitkannya.
+
+Contoh coturn minimal (`/etc/turnserver.conf`):
+
+```conf
+listening-port=3478
+tls-listening-port=5349
+fingerprint
+realm=telecare.example
+# Kredensial sementara — server dan penerbit berbagi rahasia ini
+use-auth-secret
+static-auth-secret=GANTI_DENGAN_RAHASIA_PANJANG
+# Alamat publik server; wajib bila berada di belakang NAT
+external-ip=203.0.113.10
+# Sertifikat untuk turns:// (mis. dari Let's Encrypt)
+cert=/etc/letsencrypt/live/turn.example/fullchain.pem
+pkey=/etc/letsencrypt/live/turn.example/privkey.pem
+# Jangan relai ke jaringan internal
+no-multicast-peers
+denied-peer-ip=10.0.0.0-10.255.255.255
+denied-peer-ip=192.168.0.0-192.168.255.255
+```
+
+Port yang perlu dibuka: 3478 (UDP dan TCP), 5349 (TLS), dan rentang relai
+(`min-port`–`max-port`, bawaan 49152–65535 UDP).
+
+Untuk uji cepat tanpa memasang server, pengguna dapat mengisi TURN miliknya sendiri di
+**Profil → Pengaturan → Panggilan**. Nilainya tersimpan di perangkat itu saja dan menimpa
+konfigurasi proyek. Kata sandi TURN sengaja tidak diikutkan dalam ekspor data JSON.
+
+#### Memeriksa apakah TURN bekerja
+
+Tombol **Uji konektivitas** pada layar yang sama menjalankan pengumpulan kandidat ICE tanpa
+membuka kamera, lalu melaporkan jumlah kandidat per jenis:
+
+| Jenis | Arti |
+| --- | --- |
+| `host` | alamat di jaringan lokal |
+| `srflx` | alamat publik hasil STUN |
+| `relay` | jalur lewat TURN — **hanya ini** yang menembus NAT ketat |
+
+`relay = 0` padahal TURN sudah diisi berarti alamat, port, atau kredensialnya salah. Setelah
+panggilan tersambung, status di layar panggilan juga membedakan *media lewat TURN* dari *jalur
+langsung*, dibaca dari `getStats()` — karena "TURN dikonfigurasi" tidak sama dengan
+"TURN terpakai".
 
 ### Catatan keamanan
 

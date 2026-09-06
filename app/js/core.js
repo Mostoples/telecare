@@ -113,7 +113,9 @@ window.TC = window.TC || {};
       targets: { kcal: 2000, carb: 250, protein: 60, fat: 65 },
       bpCal: null                  // { sys, dia, at }
     },
-    settings: { fastDemo: true, notif: true }
+    // turn: { urls, username, credential } — server TURN pilihan pengguna,
+    // menimpa bawaan di app/js/rtc-config.js. Lihat Pengaturan → Panggilan.
+    settings: { fastDemo: true, notif: true, turn: null }
   });
 
   let state = defaults();

@@ -71,7 +71,8 @@ Legenda: ✅ selesai & terverifikasi · 🟡 berjalan, ada batasan · ⬜ belum 
 | Sesi makan 4 titik | ✅ | Kamera → koreksi → kurva respons |
 | Analisis (vital/gizi/respons) | ✅ | |
 | **Chat via Firebase RTDB** | ✅ | Tersinkron antarperangkat, ada mirror lokal luring; akses per peserta |
-| **Panggilan WebRTC** | 🟡 | Offer/answer/ICE terverifikasi; **belum ada TURN** |
+| **Panggilan WebRTC** | 🟡 | Offer/answer/ICE terverifikasi; TURN sudah didukung + ada diagnostik, **servernya belum diisi** |
+| **PWA (installable + luring)** | ✅ | manifest + service worker; terbukti termuat dengan server dimatikan |
 | Balasan dokter otomatis | 🟡 | Pola kata kunci; berhenti saat dokter nyata hadir |
 | Layar dokter (klinik) | ✅ | Antrean, pasien binaan, detail vital |
 | Layar admin faskes | ✅ | Triase unit, inventaris, nakes |
@@ -250,8 +251,13 @@ Urut dari yang paling perlu diselesaikan.
    Kartu "Stres" sengaja dilabeli *fokus penelitian, bukan angka survei*.
 3. ~~**Belum ada Git.**~~ **Selesai.** Repositori aktif pada branch `main`, `.gitignore`
    mengecualikan `*.blend1`, log, dan `.firebase/`.
-4. **TURN server belum ada.** Panggilan hanya memakai STUN publik. Di balik NAT ketat
-   (jaringan kampus/kantor, CGNAT seluler) sambungan bisa gagal. Butuh TURN untuk pemakaian nyata.
+4. **⚠️ TURN belum ada servernya — dukungannya sudah, kredensialnya belum.** Seluruh jalur sudah
+   siap: [app/js/rtc-config.js](app/js/rtc-config.js) menerima TURN statis maupun penerbit
+   kredensial sementara, pengguna dapat mengisi TURN sendiri di Pengaturan, ada diagnostik
+   kandidat ICE, dan layar panggilan membedakan *media lewat TURN* dari *jalur langsung*.
+   **Yang belum ada: server TURN sungguhan beserta kredensialnya** — itu perlu VPS (coturn) atau
+   layanan berbayar, tidak dapat disediakan dari sisi kode. Sampai itu diisi, panggilan di balik
+   NAT ketat tetap gagal, hanya sekarang pesan galatnya menyebut sebabnya.
 5. **Nilai fisiologis masih simulasi.** Mesin sirkadian di [app/js/engine.js](app/js/engine.js).
    Integrasi sensor nyata baru sebatas pemindaian Web Bluetooth — belum membaca karakteristik GATT.
 6. **Balasan dokter masih otomatis.** Pola kata kunci di `REPLY_RULES`. Sudah dilabeli jelas
@@ -277,9 +283,10 @@ Belum dikerjakan, tinggal pilih:
 - [x] Perketat aturan RTDB + aktifkan Firebase Authentication penuh
 - [ ] Peran tepercaya di server (custom claims) agar aturan bisa membedakan dokter
 - [x] Ganti angka Urgensi dengan data bersumber + sitasi
-- [ ] Tambah TURN server (coturn sendiri atau layanan pihak ketiga)
+- [x] Dukungan TURN + diagnostik konektivitas (server & kredensialnya masih perlu disediakan)
+- [x] PWA: manifest + service worker agar bisa dipasang dan jalan luring
 - [ ] Baca karakteristik GATT nyata dari perangkat BLE (Heart Rate Service `0x180D`)
-- [ ] PWA: manifest + service worker agar bisa dipasang dan jalan luring
+
 - [ ] Halaman detail pasien untuk dokter: riwayat konsultasi + catatan klinis tersimpan
 - [ ] Notifikasi push (FCM) untuk eskalasi kritis
 - [ ] Uji otomatis sapuan rute agar regresi ketahuan lebih awal
@@ -299,7 +306,11 @@ app/css/app.css                              sistem desain aplikasi
 app/js/core.js                               util, store, router, UI, grafik
 app/js/data.js                               perangkat, dokter, makanan, PERAN, faskes, pasien
 app/js/engine.js                             simulasi vital, hub perangkat, sesi makan, konsultasi
+app/js/rtc-config.js                         server ICE/TURN (diisi pemilik proyek)
 app/js/firebase.js                           chat RTDB + Google Sign-In + WebRTC
+app/manifest.webmanifest · app/sw.js         PWA: installable + luring
+app/assets/icons/                            ikon PWA (dibangun tools/build_icons.py)
+tools/build_icons.py · tools/serve.py        generator ikon & server lokal ber-MIME benar
 app/js/views-auth.js                         onboarding, masuk, daftar, tamu, Google
 app/js/views-home.js                         beranda, vital, analisis, riwayat
 app/js/views-session.js                      kamera → koreksi → sesi → ringkasan

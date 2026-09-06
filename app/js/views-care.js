@@ -702,6 +702,19 @@
 
     function setState(txt) { if (stateEl) stateEl.textContent = txt; }
 
+    /**
+     * Setelah tersambung, laporkan jalur yang sungguh dipakai. Membedakan
+     * "TURN dikonfigurasi" dari "TURN terpakai" — dua hal yang sering
+     * disamakan saat memeriksa masalah panggilan.
+     */
+    async function laporkanJalur() {
+      if (!sess || !sess.jalurTerpakai) return;
+      const j = await sess.jalurTerpakai();
+      if (!j) return;
+      setState(j.viaTurn ? 'Tersambung · media lewat TURN'
+                         : 'Tersambung · jalur langsung (' + (j.lokal || '?') + ')');
+    }
+
     (async function connect() {
       if (!TC.RTC.supported()) {
         setState('Peramban ini tidak mendukung WebRTC.');
@@ -736,9 +749,19 @@
             }
           },
           onState(st) {
-            if (st === 'connected') setState('Tersambung');
-            else if (st === 'disconnected') setState('Sambungan terputus, mencoba lagi…');
-            else if (st === 'failed') setState('Sambungan gagal. Akhiri lalu mulai ulang panggilan.');
+            if (st === 'connected') {
+              setState('Tersambung');
+              laporkanJalur();
+            } else if (st === 'disconnected') {
+              setState('Sambungan terputus, mencoba lagi…');
+            } else if (st === 'failed') {
+              // Inilah gejala khas tidak adanya TURN, jadi sebabnya disebutkan
+              // langsung supaya tidak ditebak-tebak.
+              setState(TC.RTC.turnTersedia()
+                ? 'Sambungan gagal. Akhiri lalu mulai ulang panggilan.'
+                : 'Sambungan gagal — kemungkinan jaringan memblokir jalur langsung. ' +
+                  'Panggilan di balik NAT ketat memerlukan server TURN (Profil → Pengaturan).');
+            }
           }
         });
       } catch (err) {
