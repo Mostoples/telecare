@@ -205,6 +205,8 @@ Ditulis karena beberapa di antaranya tidak terlihat sampai benar-benar diuji.
 | UI mengaku "tersambung" padahal tulisan ditolak | Sesi gagal tidak mengubah `FB.online` | `FB.canSync()` = tersambung **dan** bersesi |
 | Pesan pertama ditolak pada percakapan baru | `send` hanya menunggu sesi, bukan keanggotaan | `Chat.join` ter-memo jadi prasyarat `send`/`subscribe` |
 | **Seluruh direktori `.git` tersaji publik di Hosting** | Pola `ignore` `**/.*` hanya mencocokkan segmen-titik di posisi **terakhir**, jadi `.git` terkecuali tetapi `.git/HEAD` tidak. Cacat ini tidak terlihat sampai repositori dibuat, lalu ikut terunggah pada deploy berikutnya | Tambah `**/.*/**`, `.git/**`, `.firebase/**` ke `firebase.json`. Jumlah berkas unggah turun 214 → 47 |
+| Papan jaga usang membuat pasien mendering perangkat yang sudah mati | `onDisconnect` tidak menolong bila proses mati mendadak | Denyut nadi memperbarui `at` tiap 60 detik; `cekJaga` menolak entri yang lebih tua dari 3 menit |
+| Judul tab baru berubah setelah 900 ms saat panggilan masuk | Penggantian judul hanya di dalam `setInterval` | Judul diganti seketika lalu baru berkedip |
 | Catatan klinis pada milidetik sama tampil terbalik | `at` identik → sort seri → urutan bergantung kestabilan sort, yang menampilkan terlama di atas | Indeks penyisipan dipakai sebagai pemecah seri di `Notes.list` dan `Consult.forPatient` |
 
 ---
@@ -213,7 +215,14 @@ Ditulis karena beberapa di antaranya tidak terlihat sampai benar-benar diuji.
 
 Supaya klaim "sudah jalan" bisa diperiksa ulang:
 
-- **Sapuan rute.** Chrome headless `--dump-dom` ke tiap rute, dicari string `Terjadi kesalahan`
+- **⚠️ Pengujian memakai Edge, bukan Chrome — dan tidak pernah mematikan proses berdasarkan nama.**
+  Pola `Get-Process chrome | Stop-Process -Force` pernah dipakai dan **mematikan seluruh tab
+  browsing pemilik komputer**. Jangan diulang. [tools/uji-browser.ps1](tools/uji-browser.ps1)
+  memaksa tiga hal: memakai Edge (bukan peramban harian), profil sementara terpisah, dan
+  penghentian hanya lewat PID yang dijalankan sendiri (`taskkill /PID x /T`).
+  Dua jebakan lain: `*>` di PowerShell 5.1 menulis log **UTF-16LE** dan membungkus baris pada
+  lebar konsol, jadi pembaca log harus menyambung baris dan mendekodekan UTF-16 lebih dulu.
+- **Sapuan rute.** Peramban headless `--dump-dom` ke tiap rute, dicari string `Terjadi kesalahan`
   (penanda layar gagal) dan DOM yang terlalu pendek. Dijalankan untuk keempat peran; 14 rute
   bersih pada pemeriksaan terakhir.
   Dua jebakan harness yang sudah menipu sekali: (1) `Stop-Process` dengan filter `Path` tidak
