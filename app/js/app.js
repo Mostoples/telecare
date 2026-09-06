@@ -258,6 +258,26 @@
         if (TC.Meals.tick() && !Store.state.activeMeal) Router.render();
       }
     });
+
+    registerServiceWorker();
+  }
+
+  /**
+   * Mendaftarkan service worker agar aplikasi dapat dipasang dan tetap terbuka
+   * saat luring. Didaftarkan setelah `load` supaya pengunduhan kerangka tidak
+   * bersaing dengan pemuatan layar pertama.
+   *
+   * Hanya berjalan pada origin aman (HTTPS atau localhost); pada `file://`
+   * atau HTTP biasa, peramban menolaknya dan aplikasi tetap jalan tanpa PWA.
+   */
+  function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    const daftar = () => {
+      navigator.serviceWorker.register('sw.js', { scope: './' })
+        .catch((e) => console.warn('[TeleCare] service worker gagal didaftarkan:', e.message));
+    };
+    if (document.readyState === 'complete') daftar();
+    else window.addEventListener('load', daftar, { once: true });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

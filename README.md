@@ -38,11 +38,16 @@ assets/img/og-cover.png     kartu pratinjau media sosial 1200x630
 ## Menjalankan secara lokal
 
 ```bash
-python -m http.server 8899
+python tools/serve.py 8899
 # buka http://127.0.0.1:8899
 ```
 
 Harus lewat HTTP server, bukan `file://` — modul ES dan pemuatan GLB memerlukan origin yang sah.
+
+`python -m http.server` juga bisa dipakai untuk situs penelitian, tetapi **tidak untuk menguji
+service worker di Windows**: pemetaan MIME diambil dari registry, dan `.js` di sana sering
+terdaftar sebagai `text/plain` sehingga peramban menolak mendaftarkan service worker.
+`tools/serve.py` memaksa MIME type yang benar dan meniru header `sw.js` milik Firebase Hosting.
 
 ## Membangun ulang aset 3D
 
@@ -142,6 +147,31 @@ dan **balasan otomatis berhenti** begitu dokter sungguhan hadir — kehadiran it
 | Sesi makan | Kamera → pengenalan makanan → koreksi → 4 titik pengukuran → ringkasan kurva respons |
 | Telemedisin | Cari dokter, profil, chat, panggilan suara/video, janji temu, riwayat |
 | Profil | Informasi pribadi, tujuan & target gizi, kalibrasi tekanan darah, pengaturan, ekspor data |
+
+### PWA — dapat dipasang dan jalan luring
+
+Aplikasi di `/app/` adalah Progressive Web App: `app/manifest.webmanifest` membuatnya dapat
+dipasang ke layar utama, dan `app/sw.js` menyimpan kerangka aplikasi sehingga tetap terbuka
+tanpa jaringan (riwayat dibaca dari `localStorage`).
+
+| Berkas | Isi |
+| --- | --- |
+| `app/manifest.webmanifest` | nama, `scope: /app/`, `display: standalone`, ikon biasa + maskable, tiga shortcut |
+| `app/sw.js` | precache kerangka, *stale-while-revalidate* untuk aset, jaringan lebih dulu untuk navigasi |
+| `tools/build_icons.py` | generator ikon (192/512, maskable, apple-touch) — dibangun lewat skrip agar reproducible |
+
+Yang **tidak** pernah disimpan service worker: Realtime Database, Authentication, dan layanan
+Firebase lain. Menyimpannya akan menampilkan percakapan basi dan merusak long-polling RTDB.
+Permintaan selain GET juga dilewatkan begitu saja.
+
+Membangun ulang ikon:
+
+```bash
+python tools/build_icons.py
+```
+
+Menaikkan `VERSION` di `app/sw.js` membuang seluruh cache lama saat aktivasi — lakukan itu bila
+kerangka aplikasi berubah dan pembaruan harus dipaksa.
 
 ### Chat — Firebase Realtime Database
 

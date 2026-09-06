@@ -1,0 +1,62 @@
+{
+  "id": "/app/",
+  "name": "TeleCare — Pemantauan & Telemedisin",
+  "short_name": "TeleCare",
+  "description": "Pantau detak jantung, SpO₂, suhu, EKG, dan tekanan darah dari perangkat wearable TeleCare, lalu konsultasikan langsung ke dokter lewat chat dan panggilan video.",
+  "lang": "id",
+  "dir": "ltr",
+  "start_url": "/app/",
+  "scope": "/app/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "any",
+  "theme_color": "#049A5B",
+  "background_color": "#FFFFFF",
+  "categories": ["health", "medical", "lifestyle"],
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Vital langsung",
+      "short_name": "Vital",
+      "url": "/app/#/vital",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Cari dokter",
+      "short_name": "Dokter",
+      "url": "/app/#/dokter",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Perangkat AIoT",
+      "short_name": "Perangkat",
+      "url": "/app/#/perangkat",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

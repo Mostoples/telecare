@@ -6,11 +6,12 @@
       "**/.*",
       "**/node_modules/**",
       "blender/**",
+      "tools/**",
       "*.blend",
       "*.blend1",
       "*.log",
       "database.rules.json",
-      "*.py",
+      "**/*.py",
       "**/*.md",
       "blender/build.log"
     ],
@@ -53,6 +54,41 @@
           {
             "key": "Cache-Control",
             "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "/app/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "**/*.webmanifest",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/manifest+json; charset=utf-8"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=3600"
+          }
+        ]
+      },
+      {
+        "source": "/app/sw.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Service-Worker-Allowed",
+            "value": "/app/"
           }
         ]
       }
