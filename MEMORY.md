@@ -5,7 +5,7 @@ selesai** — supaya siapa pun (termasuk sesi kerja berikutnya) bisa melanjutkan
 menebak-nebak. Untuk cara memakai dan menjalankan proyek, lihat [README.md](README.md);
 berkas ini khusus soal *progres* dan *alasan di balik keputusan*.
 
-**Diperbarui:** 7 September 2026
+**Diperbarui:** 11 September 2026
 
 ---
 
@@ -22,6 +22,7 @@ berkas ini khusus soal *progres* dan *alasan di balik keputusan*.
 | **Aplikasi** | https://telecare-id.web.app/app/ |
 | **Ukuran** | ± 13.500 baris (HTML/CSS/JS/Python) |
 | **Versi kontrol** | ✅ Git aktif, branch `main` |
+| **Repositori** | https://github.com/Mostoples/telecare (publik) |
 
 ### Tautan demo cepat
 
@@ -133,6 +134,12 @@ Urut dari yang paling awal.
    `tools/bangun-capcut.ps1`.
 
 ---
+
+16. **Repositori dipublikasikan.** Seluruh riwayat (18 commit) di-push ke
+   https://github.com/Mostoples/telecare sebagai repositori publik. Sebelum push,
+   diperiksa tidak ada berkas melebihi batas GitHub (terbesar 37 MB: video tutorial;
+   total 59 MB). Konfigurasi Firebase web ikut terlihat — itu memang bukan rahasia,
+   keamanannya bertumpu pada aturan database yang sudah diperketat (lihat §4).
 
 ## 4. Keputusan teknis & alasannya
 
@@ -330,7 +337,10 @@ Urut dari yang paling perlu diselesaikan.
    perempat kematian), dengan daftar sumber `#sumber-urgensi` di bawah kartu statistik.
    Kartu "Stres" sengaja dilabeli *fokus penelitian, bukan angka survei*.
 3. ~~**Belum ada Git.**~~ **Selesai.** Repositori aktif pada branch `main`, `.gitignore`
-   mengecualikan `*.blend1`, log, dan `.firebase/`.
+   mengecualikan `*.blend1`, log, `build/`, dan `.firebase/`. Sudah terhubung ke remote
+   `origin` → https://github.com/Mostoples/telecare (publik), jadi riwayat commit kini punya
+   cadangan di luar laptop. Sebelumnya seluruh riwayat hanya ada di satu mesin; Firebase
+   Hosting menyimpan hasil jadinya saja, bukan riwayat Git-nya.
 4. **⚠️ TURN belum ada servernya — dukungannya sudah, kredensialnya belum.** Seluruh jalur sudah
    siap: [app/js/rtc-config.js](app/js/rtc-config.js) menerima TURN statis maupun penerbit
    kredensial sementara, pengguna dapat mengisi TURN sendiri di Pengaturan, ada diagnostik
