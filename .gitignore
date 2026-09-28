@@ -1,0 +1,8 @@
+# Hasil build arduino-cli / Arduino IDE
+build/
+*.bin
+*.elf
+*.map
+
+# Pengaturan editor lokal
+.vscode/

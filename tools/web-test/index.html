@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeleCare — Uji BLE</title>
+<style>
+  :root { --bg:#0b0d12; --kartu:#171a21; --garis:#262a33; --teks:#e8ebf1; --redup:#8e96a6;
+          --hijau:#a2e32b; --merah:#ff3b5c; --biru:#22d3ee; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.4 system-ui, sans-serif; background:var(--bg); color:var(--teks); }
+  main { max-width:720px; margin:0 auto; padding:16px; }
+  h1 { font-size:20px; margin:0 0 12px; }
+  .baris { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; }
+  button { background:#2a3140; color:var(--teks); border:1px solid var(--garis); border-radius:8px;
+           padding:8px 14px; font:inherit; cursor:pointer; }
+  button.utama { background:var(--hijau); color:#111; border:none; font-weight:600; }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .pil { padding:4px 10px; border-radius:999px; background:var(--kartu); color:var(--redup); }
+  .pil.on { color:#111; background:var(--hijau); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin-bottom:12px; }
+  .kartu { background:var(--kartu); border:1px solid var(--garis); border-radius:12px; padding:12px; }
+  .kartu small { color:var(--redup); display:block; }
+  .kartu b { font-size:28px; }
+  .kartu b.sementara { color:var(--redup); }
+  progress { width:100%; height:8px; accent-color:var(--hijau); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--garis); }
+  th { color:var(--redup); font-weight:500; }
+  #log { background:#07080b; border:1px solid var(--garis); border-radius:8px; padding:8px;
+         height:160px; overflow:auto; font:12px/1.4 ui-monospace, monospace; color:var(--redup); }
+  .tabel-wrap { overflow-x:auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>TeleCare — Uji BLE</h1>
+  <div class="baris">
+    <button id="bSambung" class="utama">Sambung</button>
+    <button id="bPutus" disabled>Putus</button>
+    <span id="pNama" class="pil">belum tersambung</span>
+  </div>
+
+  <div class="grid">
+    <div class="kartu"><small>Baterai</small><b id="vBatt">--</b></div>
+    <div class="kartu"><small>Status</small><b id="vState" style="font-size:16px">--</b></div>
+    <div class="kartu"><small>Tersimpan di jam</small><b id="vSimpan">--</b></div>
+  </div>
+
+  <div class="baris">
+    <button id="bMulai" disabled>Mulai ukur</button>
+    <button id="bStop" disabled>Stop ukur</button>
+    <button id="bSinkron" disabled>Sinkron</button>
+    <button id="bHapusSemua" disabled>Hapus semua di jam</button>
+  </div>
+
+  <div class="kartu" style="margin-bottom:12px">
+    <small>Kemajuan (100% = data cukup) · <span id="vDetik">0</span> dtk</small>
+    <progress id="vPersen" max="100" value="0"></progress>
+  </div>
+  <div class="grid">
+    <div class="kartu"><small>Detak (bpm)</small><b id="vBpm">--</b></div>
+    <div class="kartu"><small>SpO2 (%)</small><b id="vSpo2">--</b></div>
+    <div class="kartu"><small>Glukosa* (mg/dL)</small><b id="vGlu">--</b></div>
+    <div class="kartu"><small>Tensi* (mmHg)</small><b id="vTd">--</b></div>
+  </div>
+
+  <h2 style="font-size:16px">Hasil diterima</h2>
+  <div class="tabel-wrap">
+    <table>
+      <thead><tr><th>id</th><th>waktu</th><th>dtk</th><th>bpm</th><th>SpO2</th><th>glu*</th><th>tensi*</th><th>sumber</th></tr></thead>
+      <tbody id="tHasil"></tbody>
+    </table>
+  </div>
+  <p style="color:var(--redup);font-size:12px">* estimasi eksperimental, bukan alat medis.</p>
+
+  <div id="log"></div>
+</main>
+
+<script>
+/* Protokol: docs/PROTOKOL_BLE.md */
+const SUF = '-5443-4172-652d-54656c654361';
+const UUID = { svc: '7e1e0001' + SUF, info: '7e1e0002' + SUF, ctl: '7e1e0003' + SUF,
+               status: '7e1e0004' + SUF, live: '7e1e0005' + SUF, hasil: '7e1e0006' + SUF };
+const OP = { SET_WAKTU: 1, MULAI: 2, STOP: 3, SINKRON: 4, HAPUS: 5, HAPUS_SEMUA: 6 };
+const STATE = ['sensor mati', 'tempelkan jari', 'menstabilkan', 'mencari detak', 'stabil', 'sensor tidak ada'];
+
+const $ = id => document.getElementById(id);
+let dev = null, ctl = null;
+const diterima = new Map();   // id -> hasil (buang duplikat)
+
+function log(t) {
+  const el = $('log');
+  el.textContent = `${new Date().toLocaleTimeString('id-ID')}  ${t}\n` + el.textContent;
+}
+
+/* Web Bluetooth menolak dua operasi GATT bersamaan, jadi semua tulisan diantrekan. */
+let antre = Promise.resolve();
+function kirim(bytes, nama) {
+  antre = antre.then(() => ctl.writeValueWithResponse(bytes))
+               .then(() => log(`→ ${nama}`))
+               .catch(e => log(`galat ${nama}: ${e.message}`));
+  return antre;
+}
+const kirimOp = (op, nama) => kirim(Uint8Array.of(op), nama);
+
+function aktif(on) {
+  for (const id of ['bPutus', 'bMulai', 'bStop', 'bSinkron', 'bHapusSemua']) $(id).disabled = !on;
+  $('bSambung').disabled = on;
+  $('pNama').classList.toggle('on', on);
+}
+
+function bacaStatus(v) {
+  const batt = v.getUint8(0), f = v.getUint8(1);
+  $('vBatt').textContent = batt === 255 ? '--' : `${batt}%${f & 2 ? ' ⚡' : ''}`;
+  $('vSimpan').textContent = v.getUint8(2);
+  $('vState').textContent = (f & 1 ? 'mengukur · ' : '') + STATE[v.getUint8(3)];
+}
+
+function isi(el, ada, teks, sementara) {
+  el.textContent = ada ? teks : '--';
+  el.classList.toggle('sementara', !!sementara);
+}
+
+function bacaLive(v) {
+  const f = v.getUint8(12), semen = f & 16;
+  $('vState').textContent = 'mengukur · ' + STATE[v.getUint8(1)];
+  $('vPersen').value = v.getUint8(2);
+  $('vDetik').textContent = v.getUint16(9, true);
+  isi($('vBpm'), f & 1, v.getUint8(3), semen);
+  isi($('vSpo2'), f & 2, v.getUint8(4), semen);
+  isi($('vGlu'), f & 4, v.getUint16(5, true), semen);
+  isi($('vTd'), f & 8, `${v.getUint8(7)}/${v.getUint8(8)}`, semen);
+}
+
+function bacaHasil(v) {
+  const r = { id: v.getUint16(0, true), epoch: v.getUint32(2, true), durasi: v.getUint16(6, true),
+              bpm: v.getUint8(8), spo2: v.getUint8(9), glu: v.getUint16(10, true),
+              sis: v.getUint8(12), dia: v.getUint8(13), sumber: v.getUint8(14) };
+  if (!diterima.has(r.id)) {
+    diterima.set(r.id, r);   // di web sungguhan: simpan ke database di sini
+    const waktu = r.epoch ? new Date(r.epoch * 1000).toLocaleString('id-ID') : '?';
+    const n = x => x || '--';
+    $('tHasil').insertAdjacentHTML('afterbegin',
+      `<tr><td>${r.id}</td><td>${waktu}</td><td>${r.durasi}</td><td>${n(r.bpm)}</td>` +
+      `<td>${n(r.spo2)}</td><td>${n(r.glu)}</td><td>${r.sis ? r.sis + '/' + r.dia : '--'}</td>` +
+      `<td>${r.sumber ? 'web' : 'tombol'}</td></tr>`);
+    log(`← HASIL id ${r.id}`);
+  }
+  /* Sudah tersimpan di web -> jam boleh menghapusnya. */
+  const b = new Uint8Array(3); b[0] = OP.HAPUS;
+  new DataView(b.buffer).setUint16(1, r.id, true);
+  kirim(b, `HAPUS ${r.id}`);
+}
+
+async function langgani(svc, uuid, fn) {
+  const c = await svc.getCharacteristic(uuid);
+  c.addEventListener('characteristicvaluechanged', e => fn(e.target.value));
+  await c.startNotifications();
+  return c;
+}
+
+async function sambung() {
+  try {
+    dev = await navigator.bluetooth.requestDevice({ filters: [{ services: [UUID.svc] }] });
+    dev.addEventListener('gattserverdisconnected', () => { aktif(false); log('terputus'); });
+    $('pNama').textContent = 'menyambung…';
+    const svc = await (await dev.gatt.connect()).getPrimaryService(UUID.svc);
+
+    const info = await (await svc.getCharacteristic(UUID.info)).readValue();   // memicu pairing
+    log(`INFO: protokol v${info.getUint8(0)}, firmware ${info.getUint8(1)}.${info.getUint8(2)}`);
+    ctl = await svc.getCharacteristic(UUID.ctl);
+
+    const st = await langgani(svc, UUID.status, bacaStatus);
+    await langgani(svc, UUID.live, bacaLive);
+    await langgani(svc, UUID.hasil, bacaHasil);   // jam lalu mengirim hasil tersimpan
+    bacaStatus(await st.readValue());
+
+    const w = new Uint8Array(5); w[0] = OP.SET_WAKTU;
+    new DataView(w.buffer).setUint32(1, Math.floor(Date.now() / 1000), true);
+    kirim(w, 'SET_WAKTU');
+
+    $('pNama').textContent = dev.name || 'TeleCare';
+    aktif(true);
+  } catch (e) {
+    log(`galat: ${e.message}`);
+    $('pNama').textContent = 'belum tersambung';
+    aktif(false);
+  }
+}
+
+$('bSambung').onclick = sambung;
+$('bPutus').onclick = () => dev && dev.gatt.disconnect();
+$('bMulai').onclick = () => kirimOp(OP.MULAI, 'MULAI_UKUR');
+$('bStop').onclick = () => kirimOp(OP.STOP, 'STOP_UKUR');
+$('bSinkron').onclick = () => kirimOp(OP.SINKRON, 'SINKRON');
+$('bHapusSemua').onclick = () => confirm('Hapus semua hasil di jam?') && kirimOp(OP.HAPUS_SEMUA, 'HAPUS_SEMUA');
+
+if (!navigator.bluetooth) log('Browser ini tidak mendukung Web Bluetooth. Pakai Chrome/Edge lewat https atau localhost.');
+</script>
+</body>
+</html>
