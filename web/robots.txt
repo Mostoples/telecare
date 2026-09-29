@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://telecare-id.web.app/sitemap.xml
