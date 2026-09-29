@@ -51,6 +51,23 @@ window.TC = window.TC || {};
   const icon = (name, cls) =>
     `<svg${cls ? ` class="${cls}"` : ''} aria-hidden="true"><use href="#ic-${name}"/></svg>`;
 
+  /* Ikon 3D (render Blender, lihat blender/build_ikon3d.py). Dipakai untuk
+     titik fokus visual; ikon garis SVG tetap dipakai di teks dan tombol. */
+  const ASET3D = '../assets/3d/';
+  // Versi animasi (WebP loop, ikon-anim/) dipakai lebih dulu; bila belum ada,
+  // jatuh ke render diam (ikon/).
+  const i3d = (name, cls) =>
+    `<img class="i3d is-anim${cls ? ' ' + cls : ''}" src="${ASET3D}ikon-anim/${name}.webp" alt="" loading="lazy" decoding="async" draggable="false" onerror="this.onerror=null;this.classList.remove('is-anim');this.src='${ASET3D}ikon/${name}.webp'">`;
+  // Ikon 3D diam (untuk dock tab & daftar panjang yang tak perlu animasi).
+  const i3dDiam = (name, cls) =>
+    `<img class="i3d${cls ? ' ' + cls : ''}" src="${ASET3D}ikon/${name}.webp" alt="" decoding="async" draggable="false">`;
+  // Pemetaan ikon garis sprite → ikon 3D Blender padanannya.
+  const IKON3D = { home: 'rumah', chart: 'grafik', chat: 'chat', user: 'pengguna', users: 'pengguna',
+    inbox: 'lonceng', cal: 'kalender', watch: 'jam', stetho: 'stetoskop', building: 'gedung',
+    doc: 'grafik', bell: 'lonceng', target: 'tujuan', sync: 'gerigi', cam: 'makan' };
+  const ilus3d = (name, cls) =>
+    `<img class="ilus3d${cls ? ' ' + cls : ''}" src="${ASET3D}ilustrasi/${name}.webp" alt="" decoding="async" draggable="false">`;
+
   const rupiah = (n) => 'Rp' + Math.round(n).toLocaleString('id-ID');
 
   const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -607,7 +624,7 @@ window.TC = window.TC || {};
 
   /* ---------------- 6. EKSPOR ---------------- */
   Object.assign(TC, {
-    $, $$, clamp, lerp, rnd, rint, pick, uid, secureId, esc, icon, rupiah,
+    $, $$, clamp, lerp, rnd, rint, pick, uid, secureId, esc, icon, i3d, i3dDiam, IKON3D, ilus3d, rupiah,
     pad2, hhmm, fullDate, shortDate, relTime, countdown, greeting, initials,
     DAYS, MONTHS,
     Store, Router,

@@ -1,0 +1,214 @@
+/* ============================================================
+   TeleCare — lapisan gaya NEUMORFIK untuk situs (dimuat setelah
+   style.css dan fx.css). Putih lembut, bersih, elegan: permukaan
+   satu warna dengan latar, kedalaman dari bayangan ganda, blok gelap
+   lama diubah terang, aset 3D Blender (ikon animasi, ilustrasi,
+   video loop) sebagai titik fokus.
+   ============================================================ */
+:root{
+  /* token sama dengan aplikasi (bahasa visual AQUENT, aksen hijau TeleCare) */
+  --canvas:#E9EFF3; --canvas-2:#DFE7EC; --surface:#E9EFF3; --paper:#F3F6F9;
+  --ink:#152A2E; --ink-2:#465C63; --muted:#80929A; --line:#D5DEE3;
+  --neu-d:#C5D2DB; --neu-l:#FFFFFF;
+  --neo:9px 9px 20px var(--neu-d),-9px -9px 20px var(--neu-l);
+  --neo-sm:5px 5px 12px var(--neu-d),-5px -5px 12px var(--neu-l);
+  --neo-in:inset 5px 5px 11px var(--neu-d),inset -5px -5px 11px var(--neu-l);
+  --neo-in-sm:inset 3px 3px 7px var(--neu-d),inset -3px -3px 7px var(--neu-l);
+  --sh-soft:var(--neo-sm); --sh-card:var(--neo); --sh-lift:14px 14px 30px var(--neu-d),-12px -12px 26px var(--neu-l);
+  --grad:linear-gradient(135deg,#3FD69D,#0B9A62);
+  --serif:"Plus Jakarta Sans",system-ui,sans-serif;
+}
+body{background:var(--canvas)}
+h1,h2,h3,h4{font-weight:700;letter-spacing:-.02em}
+.h-display{font-weight:800;letter-spacing:-.03em;line-height:1.05}
+h2{font-weight:800;letter-spacing:-.025em}
+.grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+::-webkit-scrollbar-track{background:var(--canvas)}
+::-webkit-scrollbar-thumb{background:#C9D6D1;border-color:var(--canvas)}
+
+/* tombol */
+.btn{border-radius:20px}
+.btn--primary{background:var(--grad);box-shadow:10px 12px 24px rgba(6,120,78,.3),-8px -8px 18px var(--neu-l),inset 0 1px 0 rgba(255,255,255,.35)}
+.btn--primary:active{box-shadow:inset 4px 4px 10px rgba(0,60,34,.35)}
+.btn--ghost,.btn--glass{background:var(--surface);color:var(--ink);border:0;box-shadow:var(--neo-sm);backdrop-filter:none}
+.btn--ghost:hover,.btn--glass:hover{box-shadow:var(--neo)}
+.btn--ghost:active,.btn--glass:active{box-shadow:var(--neo-in-sm)}
+
+/* navigasi terang sejak awal */
+.brand,.nav .brand{color:var(--ink)}
+.nav__links a{color:var(--ink-2);white-space:nowrap}
+.nav__links a:hover,.nav.is-stuck .nav__links a:hover{background:var(--surface);color:var(--ink);box-shadow:var(--neo-in-sm)}
+.nav.is-stuck{background:rgba(238,243,241,.86);box-shadow:0 8px 30px rgba(150,170,162,.25)}
+.nav.is-stuck .btn--glass{background:var(--grad);color:#fff}
+.burger{border:0;box-shadow:var(--neo-sm)}
+.burger span{color:var(--ink)}
+.mobile-menu{background:var(--canvas)}
+
+/* hero */
+.hero{color:var(--ink);background:
+  radial-gradient(60% 55% at 78% 30%,#F8FBFA 0%,rgba(248,251,250,0) 70%),
+  radial-gradient(50% 50% at 8% 90%,rgba(4,154,91,.07) 0%,transparent 70%),var(--canvas)}
+.hero h1{color:var(--ink)}
+.hero__lead{color:var(--muted)}
+.hero__lead b{color:var(--ink)}
+#hero-canvas{opacity:.42;-webkit-mask-image:linear-gradient(90deg,transparent 18%,#000 62%);mask-image:linear-gradient(90deg,transparent 18%,#000 62%)}
+.hero__grid-overlay{opacity:.9;background-image:radial-gradient(rgba(4,154,91,.14) 1px,transparent 1.4px);background-size:28px 28px}
+.hero__meta{border-top:0;gap:18px}
+.hero__meta div{padding:14px 18px;border-radius:20px;box-shadow:var(--neo-sm);background:var(--surface)}
+.hero__meta b{color:var(--ink)}
+.hero__meta span{color:var(--muted)}
+.eyebrow--dark{background:var(--surface)!important;color:var(--green-600)!important;border:0!important;box-shadow:var(--neo-in-sm)}
+.hero__stage::before{content:"";position:absolute;inset:8%;border-radius:50%;box-shadow:var(--neo-in);z-index:0}
+.hero__stage::after{content:"";position:absolute;inset:20%;border-radius:50%;box-shadow:var(--neo);z-index:0}
+.hero__product{position:relative;z-index:2;filter:none;border-radius:50%}
+.hero__loop{width:100%;height:auto;aspect-ratio:1;object-fit:cover;animation:none;
+  -webkit-mask-image:radial-gradient(closest-side,#000 82%,transparent 100%);mask-image:radial-gradient(closest-side,#000 82%,transparent 100%)}
+.hero__ring{border-color:rgba(4,154,91,.18);z-index:1}
+.hero__ring.r3{border-color:rgba(14,127,184,.14)}
+.float-card{background:rgba(238,243,241,.9);border:0;box-shadow:var(--neo);backdrop-filter:blur(8px);z-index:3}
+.float-card b{color:var(--ink)}
+.float-card span{color:var(--muted)}
+.float-card__ico{background:var(--surface)!important;box-shadow:var(--neo-in-sm);width:44px;height:44px;border-radius:14px;overflow:hidden}
+.float-card__ico img{width:40px;height:40px}
+.scroll-hint{color:var(--muted)}
+.scroll-hint i{background:linear-gradient(var(--green-500),transparent)}
+
+/* ticker */
+.ticker{background:var(--canvas);color:var(--ink);box-shadow:var(--neo-in)}
+.ticker::before{background:linear-gradient(90deg,var(--canvas),transparent)}
+.ticker::after{background:linear-gradient(270deg,var(--canvas),transparent)}
+.ticker__item{color:var(--ink-2)}
+.ticker__item svg{color:var(--green-500)}
+
+/* bagian & kartu */
+.problem,.product,.dash,.flow,.arch,.team{background:var(--canvas);border:0}
+.card{background:var(--surface);border:0;box-shadow:var(--neo)}
+.card:hover{box-shadow:var(--sh-lift)}
+.card__ico{box-shadow:var(--neo-in-sm);background:var(--surface)!important}
+.card__deco{opacity:.35}
+.chip{background:var(--surface);border:0;box-shadow:var(--neo-in-sm)}
+.spec-list{border:0;box-shadow:var(--neo);gap:0}
+.spec-row,.spec-row:nth-child(odd){background:var(--surface)}
+.spec-row + .spec-row{border-top:1px solid var(--line)}
+.spec-row:hover{background:var(--paper)}
+.spec-row__ico{background:var(--surface);box-shadow:var(--neo-in-sm)}
+.viewer__badge{background:var(--surface);color:var(--green-600);box-shadow:var(--neo-sm)}
+.arch-svg{border:0;box-shadow:var(--neo);background:var(--paper)}
+
+/* video produk */
+.filmstrip{background:var(--canvas);color:var(--ink)}
+.filmstrip::after{display:none}
+.filmstrip h2,.filmstrip .sec-head p{color:var(--ink)}
+.film-wrap{border:0;box-shadow:var(--sh-lift);background:var(--paper)}
+.film-bar{background:var(--surface);border-top:0}
+.film-bar span{color:var(--muted)}
+.film-bar .dotgrp i{background:var(--line)}
+.vctrl{color:var(--ink);border:0;box-shadow:var(--neo-sm)}
+.vctrl:hover{background:var(--surface);box-shadow:var(--neo-in-sm)}
+.pipe-step{background:var(--surface);border:0;box-shadow:var(--neo-sm)}
+.pipe-step b{color:var(--ink)}
+.pipe-step p{color:var(--muted)}
+.pipe-step em{color:var(--green-600)}
+
+/* dasbor */
+.dash-shell{border:0!important;box-shadow:var(--sh-lift)!important;background:var(--surface)}
+.dash-top,.dash-side{background:var(--surface);border-color:var(--line)}
+.ecg-box{background:var(--paper);box-shadow:var(--neo-in)}
+.ecg-box::before{opacity:1;background-image:linear-gradient(rgba(4,154,91,.07) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(4,154,91,.07) 1px,transparent 1px)}
+.alert{border:0;box-shadow:var(--neo-in-sm)}
+.alert--crit,.alert--warn,.alert--ok{background:var(--surface)}
+.ai-card{color:var(--ink);background:var(--surface);box-shadow:var(--neo)}
+.ai-card__glow{background:#CFC6FF;opacity:.5}
+.ai-card__tag{color:var(--violet-500)}
+.ai-card p{color:var(--muted)}
+
+/* segmen */
+.seg-card{color:var(--ink);background:var(--surface);box-shadow:var(--neo)}
+.seg-card__bg{opacity:.12}
+.seg-card h3{color:var(--ink)}
+.seg-card p{color:var(--muted)}
+.seg-card__n{color:rgba(12,31,26,.08)}
+.seg-card__ico{background:var(--surface);border:0;box-shadow:var(--neo-in-sm);width:64px;height:64px;border-radius:20px}
+.seg-card__ico svg{color:var(--green-600)}
+.seg-card__ico img{width:56px;height:56px}
+.seg-card__stats{border-top-color:var(--line)}
+.seg-card__stats div{color:var(--muted)}
+.seg-card__stats b{color:var(--ink)}
+
+/* tim, CTA, kaki */
+.advisor{background:var(--surface);color:var(--ink);box-shadow:var(--neo)}
+.advisor h3{color:var(--ink)}
+.advisor p{color:var(--muted)}
+.cta{background:var(--surface);color:var(--ink);box-shadow:var(--neo)}
+.cta h2{color:var(--ink)}
+.cta p{color:var(--muted)}
+.cta__art{position:absolute;right:-30px;bottom:-40px;width:min(40%,360px);opacity:.95;z-index:1!important}
+.footer{background:var(--canvas);color:var(--muted);box-shadow:inset 0 14px 30px -18px var(--neu-d)}
+.footer h5,.footer__brand{color:var(--ink)}
+.footer a:hover{color:var(--green-600)}
+.footer__bottom{border-top-color:var(--line)}
+
+/* pemuat awal */
+.preload{background:var(--canvas)}
+.preload__inner{color:var(--ink)}
+.preload__bar{background:var(--surface);box-shadow:var(--neo-in-sm);height:6px;border-radius:99px}
+.preload span{color:var(--muted)}
+
+/* ---------- aset 3D animasi ---------- */
+.i3d{display:block;object-fit:contain;pointer-events:none;user-select:none}
+.ikon3d-baris{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;margin-top:34px}
+.ikon3d-baris figure{margin:0;width:118px;padding:14px 10px 12px;border-radius:26px;background:var(--surface);
+  box-shadow:var(--neo);text-align:center;transition:box-shadow .4s var(--ease-out),transform .4s var(--ease-out)}
+.ikon3d-baris figure:hover{transform:translateY(-4px);box-shadow:var(--sh-lift)}
+.ikon3d-baris img{width:78px;height:78px;margin:0 auto 6px}
+.ikon3d-baris figcaption{font-size:.74rem;font-weight:600;color:var(--ink-2)}
+
+/* dekorasi latar: bola neumorfik melayang + pola titik */
+.neu-orbs{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.neu-orbs i{position:absolute;border-radius:50%;background:var(--surface);box-shadow:var(--neo);animation:orb 18s ease-in-out infinite}
+.neu-orbs i:nth-child(1){width:120px;height:120px;left:4%;top:12%}
+.neu-orbs i:nth-child(2){width:60px;height:60px;right:8%;top:22%;animation-delay:-6s;box-shadow:var(--neo-in)}
+.neu-orbs i:nth-child(3){width:90px;height:90px;right:14%;bottom:10%;animation-delay:-11s}
+@keyframes orb{0%,100%{transform:translate(0,0)}33%{transform:translate(14px,-18px)}66%{transform:translate(-10px,12px)}}
+
+.dekor3d{position:absolute;pointer-events:none;z-index:0;opacity:.9}
+
+@media(prefers-reduced-motion:reduce){.neu-orbs i{animation:none}}
+
+/* kartu statistik & ikon kartu */
+.stat-card{background:var(--surface);border:0;box-shadow:var(--neo)}
+.stat-card__bar{width:0}
+.stat-card b{font-weight:800}
+.card__ico{width:64px;height:64px;border-radius:20px;padding:4px}
+.card__ico img,.seg-card__ico img{width:100%;height:100%}
+
+/* tab video */
+.vtabs{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:0 auto 28px;padding:8px;border-radius:99px;
+  box-shadow:var(--neo-in);width:max-content;max-width:100%}
+.vtabs button{padding:11px 22px;border-radius:99px;font-weight:600;font-size:.9rem;color:var(--muted);transition:box-shadow .3s,color .3s}
+.vtabs button[aria-selected="true"]{color:var(--ink);background:var(--surface);box-shadow:var(--neo-sm)}
+.vtabs button[hidden]{display:none}
+.kredit-sf{margin-top:26px;font-size:.74rem;line-height:1.6;color:var(--muted);text-align:center;max-width:90ch;margin-inline:auto}
+@media(max-width:560px){.vtabs{border-radius:24px;width:100%}.vtabs button{flex:1 1 40%;padding:10px 12px}}
+.cta__deco{display:none}
+/* pola ubin porselen beranimasi (Blender) di latar galeri ikon */
+#aset3d{background:url(../assets/3d/dekor/pola.webp) 0 0/240px 240px repeat,var(--canvas)}
+#aset3d::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 70% at 50% 45%,var(--canvas) 30%,rgba(238,243,241,.55) 100%);pointer-events:none}
+
+/* ---------- mobile-first ---------- */
+@media(max-width:760px){
+  .hero{padding-top:calc(var(--nav-h) + 16px);min-height:auto}
+  .hero__inner{grid-template-columns:1fr;gap:10px}
+  .hero__stage{order:-1;max-width:420px;margin-inline:auto;width:100%}
+  .h-display{font-size:clamp(2.1rem,9vw,2.8rem)}
+  .hero__meta{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .hero__meta div{min-width:0}
+  .float-card{padding:9px 11px;gap:8px}
+  .float-card__ico{width:36px;height:36px}
+  .fc-1{left:0} .fc-2{right:0} .fc-3{left:4%}
+  .ikon3d-baris figure{width:calc(33.33% - 12px)}
+  .ikon3d-baris{gap:14px}
+  .vtabs{width:100%}
+  .scroll-hint{display:none}
+}

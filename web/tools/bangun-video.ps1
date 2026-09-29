@@ -1,4 +1,4 @@
-<#
+﻿<#
   Membangun dua video showcase TeleCare dari tangkapan layar di build/shots.
 
     assets/video/telecare-promo.mp4     ~65 detik, tempo cepat, untuk promosi
@@ -10,7 +10,7 @@
     powershell -NoProfile -ExecutionPolicy Bypass -File tools\bangun-video.ps1
 
   Alur kerja:
-    1. Satu latar gelap bergaris (gradients + drawgrid + vignette) dibuat sekali.
+    1. Satu latar terang neumorfik (gradients + drawgrid halus) dibuat sekali.
     2. Tiap halaman jadi satu klip pendek: panel tangkapan layar di atas latar,
        diberi tepi aksen, pantulan kabur, judul, keterangan, lalu didorong
        perlahan dengan zoompan.
@@ -42,8 +42,8 @@ foreach ($d in @($kerja, $klipDir)) { if (-not (Test-Path $d)) { New-Item -ItemT
 $FONT_B = '/Windows/Fonts/segoeuib.ttf'
 $FONT_R = '/Windows/Fonts/segoeui.ttf'
 $FONT_M = '/Windows/Fonts/consola.ttf'
-$AKSEN = '0x2BE39A'
-$AKSEN2 = '0x39D0FF'
+$AKSEN = '0x049A5B'
+$AKSEN2 = '0x0E7FB8'
 $FPS = 30
 
 # ---------------------------------------------------------------- pembantu
@@ -85,10 +85,10 @@ function Tulis-Graf {
 
 $latar = Join-Path $kerja 'latar.png'
 if (-not (Test-Path $latar)) {
-  $gl = "gradients=s=1920x1080:c0=0x02070E:c1=0x0B2438:c2=0x061A2B:nb_colors=3:type=radial:d=1," +
+  $gl = "gradients=s=1920x1080:c0=0xF8FBFA:c1=0xEEF3F1:c2=0xE4EBE8:nb_colors=3:type=radial:d=1," +
   "drawgrid=w=64:h=64:t=1:color=$AKSEN2@0.05," +
   "drawbox=x=0:y=0:w=1920:h=6:color=$AKSEN@0.45:t=fill," +
-  "vignette=PI/4.2,format=rgb24"
+  "format=rgb24"
   Jalankan-FFmpeg @('-hide_banner', '-y', '-f', 'lavfi', '-i', $gl, '-frames:v', '1', $latar) 'latar'
   Write-Host "latar dibuat -> $latar"
 }
@@ -102,9 +102,9 @@ function Rantai-Hias {
   $s = Aman-Teks $Sub
   $bag = @(
     "drawbox=x=196:y=74:w=6:h=60:color=$AKSEN@1:t=fill"
-    "drawtext=fontfile='$FONT_B':text='$j':fontsize=52:fontcolor=0xF2FBFF:x=222:y=68"
-    "drawtext=fontfile='$FONT_R':text='$s':fontsize=27:fontcolor=0x86CFF0:x=224:y=136"
-    "drawtext=fontfile='$FONT_M':text='telecare-id.web.app':fontsize=23:fontcolor=0x3E7EA6:x=1920-tw-248:y=1028"
+    "drawtext=fontfile='$FONT_B':text='$j':fontsize=52:fontcolor=0x0C1F1A:x=222:y=68"
+    "drawtext=fontfile='$FONT_R':text='$s':fontsize=27:fontcolor=0x6C847E:x=224:y=136"
+    "drawtext=fontfile='$FONT_M':text='telecare-id.web.app':fontsize=23:fontcolor=0x049A5B:x=1920-tw-248:y=1028"
   )
   if ($Nomor) {
     $n = Aman-Teks $Nomor
@@ -127,8 +127,8 @@ function Buat-Klip {
   $hias = Rantai-Hias -Judul $Judul -Sub $Sub -Nomor $Nomor
   $graf = @"
 [0:v]scale=1920:1080,setsar=1[bg];
-[1:v]scale=1424:801:flags=lanczos,setsar=1,pad=1432:809:4:4:color=${AKSEN}[panel];
-color=c=${AKSEN}:s=1432x809:d=$($Durasi):r=$($FPS),format=rgba,
+[1:v]scale=1424:801:flags=lanczos,setsar=1,pad=1432:809:4:4:color=0xF8FBFA[panel];
+color=c=0x96AAA2:s=1432x809:d=$($Durasi):r=$($FPS),format=rgba,
 pad=1672:1049:120:120:color=0x00000000,gblur=sigma=48,colorchannelmixer=aa=0.5[glow];
 [bg][glow]overlay=x=124:y=76:shortest=1[b1];
 [b1][panel]overlay=x=244:y=196:shortest=1[b2];
@@ -160,8 +160,8 @@ function Buat-KlipVideo {
   $hias = Rantai-Hias -Judul $Judul -Sub $Sub
   $graf = @"
 [0:v]scale=1920:1080,setsar=1[bg];
-[1:v]scale=1424:801:flags=lanczos,setsar=1,fps=$FPS,pad=1432:809:4:4:color=${AKSEN}[panel];
-color=c=${AKSEN}:s=1432x809:d=$($Durasi):r=$($FPS),format=rgba,
+[1:v]scale=1424:801:flags=lanczos,setsar=1,fps=$FPS,pad=1432:809:4:4:color=0xF8FBFA[panel];
+color=c=0x96AAA2:s=1432x809:d=$($Durasi):r=$($FPS),format=rgba,
 pad=1672:1049:120:120:color=0x00000000,gblur=sigma=48,colorchannelmixer=aa=0.5[glow];
 [bg][glow]overlay=x=124:y=76:shortest=1[b1];
 [b1][panel]overlay=x=244:y=196:shortest=1[b2];
@@ -195,9 +195,9 @@ function Buat-Kartu {
   $bingkai = [int]([Math]::Round($Durasi * $FPS))
   $xTeks = if ($Gambar) { '180' } else { '(w-tw)/2' }
   $tulis = @(
-    "drawtext=fontfile='$FONT_B':text='$b1':fontsize=104:fontcolor=0xF4FCFF:x=$xTeks`:y=392"
+    "drawtext=fontfile='$FONT_B':text='$b1':fontsize=104:fontcolor=0x0C1F1A:x=$xTeks`:y=392"
     "drawtext=fontfile='$FONT_R':text='$b2':fontsize=40:fontcolor=$AKSEN2@0.95:x=$xTeks`:y=524"
-    "drawtext=fontfile='$FONT_M':text='$b3':fontsize=27:fontcolor=0x6FA8C7:x=$xTeks`:y=596"
+    "drawtext=fontfile='$FONT_M':text='$b3':fontsize=27:fontcolor=0x6C847E:x=$xTeks`:y=596"
     "drawbox=x=$(if ($Gambar) { '180' } else { '(w-520)/2' }):y=356:w=520:h=5:color=$AKSEN@0.9:t=fill"
   ) -join ','
   if ($Gambar) {

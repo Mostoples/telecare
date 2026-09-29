@@ -144,7 +144,7 @@
       ? `<a class="tab tab--fab" href="${t.href}" data-tab="${t.id}">
            <i>${icon(t.icon)}</i><span>${esc(t.label)}</span></a>`
       : `<a class="tab" href="${t.href}" data-tab="${t.id}">
-           ${icon(t.icon)}<span>${esc(t.label)}</span></a>`).join('');
+           ${TC.IKON3D[t.icon] ? TC.i3dDiam(TC.IKON3D[t.icon], 'tab__3d') : icon(t.icon)}<span>${esc(t.label)}</span></a>`).join('');
   }
 
   function drawSidebar() {

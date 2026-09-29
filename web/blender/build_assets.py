@@ -716,4 +716,7 @@ def main():
     print("TELECARE_BUILD_DONE")
 
 
-main()
+# Dijaga supaya fungsi pembangun (build_teleband, build_telering, dll.) dapat
+# diimpor skrip lain — misalnya build_ikon3d.py — tanpa ikut merender ulang video.
+if __name__ == "__main__":
+    main()

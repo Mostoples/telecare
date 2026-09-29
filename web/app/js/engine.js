@@ -272,13 +272,13 @@
           i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
         }
       };
-      path(); ctx.strokeStyle = 'rgba(111,211,166,.22)'; ctx.lineWidth = 5;
+      path(); ctx.strokeStyle = 'rgba(4,154,91,.12)'; ctx.lineWidth = 6;
       ctx.lineJoin = 'round'; ctx.stroke();
-      path(); ctx.strokeStyle = '#6FD3A6'; ctx.lineWidth = 1.9;
+      path(); ctx.strokeStyle = '#049A5B'; ctx.lineWidth = 1.8;
       ctx.lineCap = 'round'; ctx.stroke();
       ctx.beginPath();
       ctx.arc(W - 1.5, base - buf[n - 1] * amp, 3, 0, 7);
-      ctx.fillStyle = '#D6F2E3'; ctx.fill();
+      ctx.fillStyle = '#049A5B'; ctx.fill();
     }
 
     let last = performance.now();

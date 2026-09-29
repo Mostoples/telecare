@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1587">
+<title>Poster TeleCare</title>
+<!-- Poster A2 potret (420 x 594 mm). Cetak: tools/cetak-poster.ps1 (Edge headless → PDF & PNG).
+     Semua visual 3D dirender Blender CLI (blender/build_ikon3d.py). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  @page{size:420mm 594mm;margin:0}
+  :root{
+    --bg:#E9EFF3; --paper:#F3F6F9; --ink:#152A2E; --ink2:#465C63; --muted:#80929A; --line:#D5DEE3;
+    --g:#049A5B; --g2:#12A866; --b:#0E7FB8;
+    --d:#C5D2DB; --l:#FFFFFF;
+    --neo:18px 18px 44px var(--d),-18px -18px 44px var(--l);
+    --neo-sm:10px 10px 24px var(--d),-10px -10px 24px var(--l);
+    --in:inset 9px 9px 20px var(--d),inset -9px -9px 20px var(--l);
+    --serif:"Plus Jakarta Sans",system-ui,sans-serif; --sans:"Plus Jakarta Sans",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1587px;height:2245px;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;overflow:hidden}
+  .poster{position:relative;width:1587px;height:2245px;padding:72px 96px 64px;overflow:hidden;display:flex;flex-direction:column}
+  .titik{position:absolute;inset:0;background-image:radial-gradient(rgba(4,154,91,.13) 1.4px,transparent 1.8px);
+    background-size:34px 34px;-webkit-mask-image:radial-gradient(70% 45% at 72% 22%,#000,transparent);mask-image:radial-gradient(70% 45% at 72% 22%,#000,transparent)}
+  .bulat{position:absolute;border-radius:50%}
+  .b1{width:980px;height:980px;right:-260px;top:120px;box-shadow:var(--in)}
+  .b2{width:660px;height:660px;right:-100px;top:280px;box-shadow:var(--neo)}
+  .isi{position:relative;z-index:2}
+
+  header{display:flex;align-items:center;gap:18px}
+  header svg{width:66px;height:66px;border-radius:20px;box-shadow:var(--neo-sm)}
+  header b{font-size:34px;letter-spacing:-.03em}
+  header small{display:block;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  header .kanan{margin-left:auto;padding:14px 24px;border-radius:99px;box-shadow:var(--in);font-size:17px;font-weight:700;color:var(--g);letter-spacing:.08em;text-transform:uppercase}
+
+  .hero{display:grid;grid-template-columns:1.02fr .98fr;gap:20px;margin-top:40px;align-items:center}
+  .hero h1{font-family:var(--serif);font-weight:800;font-size:100px;line-height:1.0;letter-spacing:-.04em}
+  .hero h1 i{font-style:normal;background:linear-gradient(135deg,#3FD69D,#0B9A62);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{margin-top:28px;font-size:25px;line-height:1.5;color:var(--ink2);max-width:30ch}
+  .hero p b{color:var(--ink)}
+  .hero .seni{position:relative;height:560px}
+  .hero .seni img{position:absolute;width:620px;left:0px;top:10px;filter:drop-shadow(0 30px 40px rgba(80,110,98,.18))}
+
+  .stat{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;margin-top:24px}
+  .stat div{padding:24px 30px;border-radius:34px;background:var(--bg);box-shadow:var(--neo)}
+  .stat b{display:block;font-family:var(--serif);font-weight:800;font-size:66px;line-height:1;letter-spacing:-.03em}
+  .stat b small{font-size:.5em}
+  .stat span{display:block;margin-top:12px;font-size:19px;line-height:1.45;color:var(--muted)}
+  .stat cite{display:block;margin-top:10px;font-style:normal;font-size:14px;color:var(--g);font-weight:700;letter-spacing:.04em}
+
+  h2{font-family:var(--serif);font-weight:800;font-size:46px;letter-spacing:-.03em;letter-spacing:-.015em;line-height:1}
+  .eb{display:inline-flex;align-items:center;gap:10px;font-size:16px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--g);margin-bottom:14px}
+  .eb::before{content:"";width:11px;height:11px;border-radius:50%;background:var(--g)}
+
+  .bawah{display:grid;grid-template-columns:1.05fr .95fr;gap:52px;margin-top:48px}
+  .vital{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:24px}
+  .vital figure{padding:12px 10px 14px;border-radius:30px;background:var(--bg);box-shadow:var(--neo-sm);text-align:center}
+  .vital img{width:82px;height:82px;object-fit:contain;margin:0 auto 6px;display:block}
+  .vital figcaption{font-size:18px;font-weight:700}
+  .vital figcaption small{display:block;font-size:14px;font-weight:500;color:var(--muted);margin-top:2px}
+
+  .ponsel{position:relative;height:640px}
+  .ponsel .hp{position:absolute;width:262px;border-radius:44px;padding:12px;background:var(--bg);box-shadow:var(--neo)}
+  .ponsel .hp img{display:block;width:100%;border-radius:34px}
+  .hp.a{left:0;top:70px;transform:rotate(-5deg)}
+  .hp.b{left:175px;top:0;z-index:2}
+  .hp.c{left:350px;top:80px;transform:rotate(5deg)}
+
+  .alur{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:22px}
+  .alur div{position:relative;padding:18px 16px;border-radius:30px;box-shadow:var(--neo-sm)}
+  .alur img{width:68px;height:68px;object-fit:contain;display:block;margin-bottom:6px}
+  .alur b{display:block;font-size:22px}
+  .alur span{display:block;font-size:16px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .alur em{position:absolute;right:18px;top:16px;font-style:normal;font-family:"JetBrains Mono",monospace;font-size:15px;color:var(--g);font-weight:500}
+
+  footer{position:relative;z-index:3;margin-top:auto;background:var(--bg);display:grid;grid-template-columns:auto 1fr auto;gap:40px;align-items:center;
+    padding:30px 36px;border-radius:40px;box-shadow:var(--neo)}
+  .qr{width:150px;height:150px;padding:16px;border-radius:26px;background:#fff;box-shadow:var(--in)}
+  .qr img{width:100%;height:100%;display:block}
+  footer .cta b{display:block;font-family:var(--serif);font-weight:800;font-size:36px;line-height:1.05;letter-spacing:-.02em}
+  footer .cta span{display:block;margin-top:10px;font-size:20px;color:var(--muted)}
+  footer .cta .url{display:inline-block;margin-top:14px;padding:10px 20px;border-radius:99px;box-shadow:var(--in);font-family:"JetBrains Mono",monospace;font-size:20px;color:var(--g)}
+  footer .tim{text-align:right;font-size:16px;line-height:1.55;color:var(--ink2)}
+  footer .tim b{font-size:17px;color:var(--ink)}
+  footer .tim small{display:block;color:var(--muted);font-size:14px;margin-top:6px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="titik"></div><i class="bulat b1"></i><i class="bulat b2"></i>
+  <div class="isi">
+    <header>
+      <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="14" fill="url(#g)"/>
+        <path d="M11 25h5.6l3-7.6 4.4 15 3.3-9.9 2.2 2.5H37" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs><linearGradient id="g" x1="0" y1="0" x2="48" y2="48"><stop stop-color="#12A866"/><stop offset="1" stop-color="#03804C"/></linearGradient></defs></svg>
+      <div><b>TeleCare</b><small>Health 5.0 Platform</small></div>
+      <span class="kanan">Fisika · FMIPA · UNS</span>
+    </header>
+
+    <section class="hero">
+      <div>
+        <h1>Rawat lebih awal, <i>bukan lebih lambat.</i></h1>
+        <p>Telemedisin <b>AIoT terpadu</b>: wearable <b>TeleBand</b> &amp; <b>TeleRing</b> memantau vital
+          secara kontinu, AI menandai pola sejak dini, dan dokter menerima datanya langsung.</p>
+      </div>
+      <div class="seni"><img src="../assets/3d/ilustrasi/hub.webp" alt="Render 3D TeleBand, TeleRing, dan aplikasi TeleCare"></div>
+    </section>
+
+    <section class="stat">
+      <div><b>34,1<small>%</small></b><span>orang dewasa Indonesia hipertensi berdasarkan pengukuran.</span><cite>RISKESDAS 2018</cite></div>
+      <div><b>8,4<small>%</small></b><span>saja yang terdiagnosis tenaga kesehatan — celah deteksi yang besar.</span><cite>RISKESDAS 2018</cite></div>
+      <div><b>&gt;70<small>%</small></b><span>kematian di Indonesia disebabkan penyakit tidak menular.</span><cite>WHO · PROFIL PTM</cite></div>
+    </section>
+
+    <section class="bawah">
+      <div>
+        <span class="eb">Dipantau kontinu</span>
+        <h2>Enam sinyal, satu riwayat.</h2>
+        <div class="vital">
+          <figure><img src="../assets/3d/ikon/jantung.webp" alt=""><figcaption>Detak jantung<small>&amp; HRV</small></figcaption></figure>
+          <figure><img src="../assets/3d/ikon/oksigen.webp" alt=""><figcaption>SpO₂<small>saturasi oksigen</small></figcaption></figure>
+          <figure><img src="../assets/3d/ikon/suhu.webp" alt=""><figcaption>Suhu tubuh<small>kontak kulit</small></figcaption></figure>
+          <figure><img src="../assets/3d/ikon/ekg.webp" alt=""><figcaption>EKG<small>lead-I</small></figcaption></figure>
+          <figure><img src="../assets/3d/ikon/tensi.webp" alt=""><figcaption>Tekanan darah<small>estimasi terkalibrasi</small></figcaption></figure>
+          <figure><img src="../assets/3d/ikon/stres.webp" alt=""><figcaption>Indeks stres<small>dari HRV</small></figcaption></figure>
+        </div>
+
+        <span class="eb" style="margin-top:36px">Alur layanan</span>
+        <div class="alur">
+          <div><em>01</em><img src="../assets/3d/ikon/jam.webp" alt=""><b>Pakai</b><span>TeleBand / TeleRing seharian.</span></div>
+          <div><em>02</em><img src="../assets/3d/ikon/awan.webp" alt=""><b>Sinkron</b><span>BLE → aplikasi → cloud.</span></div>
+          <div><em>03</em><img src="../assets/3d/ikon/grafik.webp" alt=""><b>Analisis</b><span>AI menandai pola dini.</span></div>
+          <div><em>04</em><img src="../assets/3d/ikon/chat.webp" alt=""><b>Konsultasi</b><span>Chat &amp; video call dokter.</span></div>
+        </div>
+      </div>
+      <div>
+        <span class="eb">Aplikasi TeleCare</span>
+        <h2>Empat peran, satu platform.</h2>
+        <p style="margin-top:16px;font-size:20px;color:var(--muted);line-height:1.5">Pasien, dokter, admin fasilitas kesehatan, dan admin sistem —
+          masing-masing dengan layar yang dirancang untuk tugasnya.</p>
+        <div class="ponsel" style="margin-top:30px">
+          <div class="hp a"><img src="ui/03-pasien-vital-hr.webp" alt=""></div>
+          <div class="hp b"><img src="ui/02-pasien-home.webp" alt=""></div>
+          <div class="hp c"><img src="ui/14-pasien-chat.webp" alt=""></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <div class="qr"><img src="qr-telecare.svg" alt="QR menuju aplikasi TeleCare"></div>
+    <div class="cta"><b>Coba sekarang — masuk sebagai tamu.</b>
+      <span>Tanpa daftar. Pilih peran pasien, dokter, atau admin faskes.</span>
+      <span class="url">telecare-id.web.app</span></div>
+    <div class="tim"><b>Fajar Jelang Riyadi</b> · Ketua<br>Faizal Tri Widiandika · Sholeh Putra Utama<br>
+      Pembimbing: Dr. Fuad Anwar, S.Si., M.Si.<small>Program Studi Fisika · FMIPA · Universitas Sebelas Maret</small></div>
+  </footer>
+</div>
+</body>
+</html>

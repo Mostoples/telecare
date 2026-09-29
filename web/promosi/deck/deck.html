@@ -1,0 +1,351 @@
+<title>Deck TeleCare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Deck 16:9 berukuran tetap 1920x1080, diskalakan agar pas di layar.
+   Satu tampilan (neumorfik terang) disengaja: warna ditetapkan eksplisit. */
+:root{
+  color-scheme:light;
+  --bg:#E9EFF3; --paper:#F3F6F9; --ink:#152A2E; --ink2:#465C63; --muted:#80929A; --line:#D5DEE3;
+  --g:#049A5B; --g2:#12A866; --b:#0E7FB8; --coral:#E2543F; --amber:#E09B12; --violet:#6C5CE7;
+  --d:#C5D2DB; --l:#FFFFFF;
+  --neo:16px 16px 40px var(--d),-16px -16px 40px var(--l);
+  --neo-sm:9px 9px 22px var(--d),-9px -9px 22px var(--l);
+  --in:inset 8px 8px 18px var(--d),inset -8px -8px 18px var(--l);
+  --serif:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;
+  --sans:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+html,body{background:#DCE4E0;color:var(--ink);font-family:var(--sans)}
+body{margin:0}
+.deck{display:grid;gap:28px;padding-block:28px;padding-inline:16px;justify-items:center}
+.s{position:relative;width:1920px;height:1080px;background:var(--bg);overflow:hidden;
+  transform-origin:top left;box-shadow:0 20px 60px rgba(12,31,26,.18);flex:none}
+.bingkai{position:relative;overflow:hidden;border-radius:14px}
+.s *{box-sizing:border-box}
+.isi{position:absolute;inset:0;padding:96px 120px}
+h1,h2,h3{margin:0;font-weight:800;font-family:var(--serif);letter-spacing:-.03em;text-wrap:balance}
+h1{font-size:112px;line-height:1.0}
+h2{font-size:70px;line-height:1.04}
+h3{font-size:34px;line-height:1.1}
+p{margin:0}
+i.em{font-style:normal;background:linear-gradient(135deg,#3FD69D,#0B9A62);-webkit-background-clip:text;background-clip:text;color:transparent}
+.eb{display:inline-flex;align-items:center;gap:12px;font-size:20px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--g);margin-bottom:22px}
+.eb::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--g)}
+.lead{font-size:30px;line-height:1.5;color:var(--ink2);max-width:36ch;margin-top:30px}
+.muted{color:var(--muted)}
+.kaki{position:absolute;left:120px;right:120px;bottom:52px;display:flex;justify-content:space-between;
+  font-size:17px;color:var(--muted);font-weight:600;letter-spacing:.04em}
+.kaki b{color:var(--ink)}
+.kartu{background:var(--bg);border-radius:36px;box-shadow:var(--neo)}
+.cekung{border-radius:36px;box-shadow:var(--in)}
+.bulat{position:absolute;border-radius:50%}
+.titik{position:absolute;inset:0;background-image:radial-gradient(rgba(4,154,91,.12) 1.4px,transparent 1.8px);background-size:34px 34px;
+  -webkit-mask-image:radial-gradient(55% 60% at 75% 45%,#000,transparent);mask-image:radial-gradient(55% 60% at 75% 45%,#000,transparent)}
+.logo{display:flex;align-items:center;gap:16px;font-weight:800;font-size:32px;letter-spacing:-.03em}
+.logo svg{width:60px;height:60px;border-radius:18px;box-shadow:var(--neo-sm)}
+.logo small{display:block;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:600}
+img{display:block;max-width:100%}
+.hp{border-radius:40px;padding:11px;background:var(--bg);box-shadow:var(--neo)}
+.hp img{border-radius:30px;width:100%}
+.layar{border-radius:22px;padding:10px;background:var(--bg);box-shadow:var(--neo)}
+.layar img{border-radius:14px}
+.num{font-family:var(--serif);font-weight:800;font-size:112px;line-height:.9;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.num small{font-size:.48em}
+.chip{display:inline-block;padding:9px 18px;border-radius:99px;box-shadow:var(--in);font-size:18px;font-weight:700;color:var(--ink2)}
+.grid{display:grid;gap:30px}
+.ikon{width:120px;height:120px;object-fit:contain}
+.nav{position:fixed;right:18px;bottom:18px;display:flex;gap:10px;z-index:9}
+.nav button{font:600 15px var(--sans);color:var(--ink);background:var(--bg);border:0;border-radius:99px;padding:12px 18px;
+  box-shadow:6px 6px 14px var(--d),-6px -6px 14px var(--l);cursor:pointer}
+.nav button:focus-visible{outline:2px solid var(--g);outline-offset:3px}
+.nav output{align-self:center;font:600 14px var(--mono);color:var(--muted);padding:0 6px}
+@media (prefers-reduced-motion:reduce){video{display:none}}
+@media print{
+  @page{size:1920px 1080px;margin:0}
+  html,body{background:var(--bg)}
+  .deck{display:block;padding:0}
+  .bingkai{width:1920px!important;height:1080px!important;border-radius:0;break-after:page}
+  .s{transform:none!important;box-shadow:none}
+  .nav{display:none}
+}
+</style>
+
+<div class="deck" id="deck">
+
+<!-- 1 · SAMPUL -->
+<section class="s" aria-label="Sampul">
+  <div class="titik"></div>
+  <i class="bulat" style="width:1040px;height:1040px;right:-180px;top:20px;box-shadow:var(--in)"></i>
+  <i class="bulat" style="width:760px;height:760px;right:-40px;top:160px;box-shadow:var(--neo)"></i>
+  <video src="img/hero-loop.mp4" poster="img/produk.webp" autoplay muted loop playsinline
+    style="position:absolute;right:30px;top:190px;width:700px;height:700px;border-radius:50%;object-fit:cover;
+    -webkit-mask-image:radial-gradient(closest-side,#000 80%,transparent);mask-image:radial-gradient(closest-side,#000 80%,transparent)"></video>
+  <div class="isi">
+    <div class="logo"><svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="14" fill="#049A5B"/><path d="M11 25h5.6l3-7.6 4.4 15 3.3-9.9 2.2 2.5H37" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>TeleCare<small>Health 5.0 Platform</small></div></div>
+    <div style="margin-top:150px">
+      <span class="eb">Telemedisin AIoT terpadu</span>
+      <h1>Rawat lebih awal,<br><i class="em">bukan lebih lambat.</i></h1>
+      <p class="lead">Wearable, aplikasi, AI, dan dokter dalam satu alur — untuk pencegahan penyakit kronis di institusi.</p>
+    </div>
+  </div>
+  <div class="kaki"><span><b>Fisika · FMIPA · Universitas Sebelas Maret</b></span><span>telecare-id.web.app</span></div>
+</section>
+
+<!-- 2 · MASALAH -->
+<section class="s" aria-label="Masalah">
+  <div class="isi">
+    <span class="eb">Latar belakang</span>
+    <h2>Penyakit kronis tumbuh diam-diam,<br>jauh sebelum gejala terlihat.</h2>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr);margin-top:80px">
+      <div class="kartu" style="padding:44px 44px 40px">
+        <div class="num">34,1<small>%</small></div>
+        <p style="font-size:26px;line-height:1.45;margin-top:22px;color:var(--ink2)">orang dewasa Indonesia hipertensi berdasarkan pengukuran tekanan darah.</p>
+        <p class="muted" style="font-size:17px;margin-top:18px;font-weight:700;letter-spacing:.05em">RISKESDAS 2018</p></div>
+      <div class="kartu" style="padding:44px 44px 40px">
+        <div class="num" style="color:var(--coral)">8,4<small>%</small></div>
+        <p style="font-size:26px;line-height:1.45;margin-top:22px;color:var(--ink2)">saja yang pernah terdiagnosis tenaga kesehatan. Sisanya belum tahu.</p>
+        <p class="muted" style="font-size:17px;margin-top:18px;font-weight:700;letter-spacing:.05em">RISKESDAS 2018</p></div>
+      <div class="kartu" style="padding:44px 44px 40px">
+        <div class="num">&gt;70<small>%</small></div>
+        <p style="font-size:26px;line-height:1.45;margin-top:22px;color:var(--ink2)">kematian di Indonesia disebabkan penyakit tidak menular.</p>
+        <p class="muted" style="font-size:17px;margin-top:18px;font-weight:700;letter-spacing:.05em">WHO · PROFIL PTM INDONESIA</p></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Masalah</span><span>02</span></div>
+</section>
+
+<!-- 3 · CELAH -->
+<section class="s" aria-label="Celah">
+  <img src="img/aman.webp" alt="" style="position:absolute;right:80px;top:170px;width:760px">
+  <div class="isi">
+    <span class="eb">Celah yang ditangani</span>
+    <h2 style="max-width:14ch">Pemeriksaan berkala datang terlambat.</h2>
+    <div class="grid" style="margin-top:64px;max-width:900px;gap:22px">
+      <div class="cekung" style="padding:26px 34px;font-size:26px;line-height:1.45"><b>Institusi padat</b> — perusahaan, pesantren, sekolah berasrama, panti wreda — memikul risiko kolektif.</div>
+      <div class="cekung" style="padding:26px 34px;font-size:26px;line-height:1.45"><b>Cek manual & jarang</b> — satu angka sesaat tidak menunjukkan tren harian atau malam hari.</div>
+      <div class="cekung" style="padding:26px 34px;font-size:26px;line-height:1.45"><b>Stres tidak terukur</b> — pemicu hipertensi dan gangguan tidur luput dari catatan.</div>
+    </div>
+  </div>
+  <div class="kaki"><span>Masalah</span><span>03</span></div>
+</section>
+
+<!-- 4 · SOLUSI -->
+<section class="s" aria-label="Solusi">
+  <div class="titik"></div>
+  <img src="img/hub.webp" alt="" style="position:absolute;right:40px;top:130px;width:1000px">
+  <div class="isi">
+    <span class="eb">Solusi</span>
+    <h2 style="max-width:15ch">Satu platform dari pergelangan ke dokter.</h2>
+    <div style="display:grid;gap:18px;margin-top:56px;max-width:720px">
+      <div style="display:flex;gap:22px;align-items:center"><img class="ikon" src="img/i-jam.webp" alt="" style="width:88px;height:88px"><p style="font-size:27px"><b>Wearable</b> TeleBand & TeleRing merekam vital kontinu.</p></div>
+      <div style="display:flex;gap:22px;align-items:center"><img class="ikon" src="img/i-grafik.webp" alt="" style="width:88px;height:88px"><p style="font-size:27px"><b>AI</b> menandai pola: indeks stres & status triase.</p></div>
+      <div style="display:flex;gap:22px;align-items:center"><img class="ikon" src="img/i-chat.webp" alt="" style="width:88px;height:88px"><p style="font-size:27px"><b>Telemedisin</b> chat & video call dengan vital terlampir.</p></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Solusi</span><span>04</span></div>
+</section>
+
+<!-- 5 · PERANGKAT -->
+<section class="s" aria-label="Perangkat">
+  <i class="bulat" style="width:820px;height:820px;left:90px;top:150px;box-shadow:var(--in)"></i>
+  <img src="img/produk.webp" alt="Render 3D TeleBand dan TeleRing" style="position:absolute;left:110px;top:230px;width:800px">
+  <div class="isi" style="left:960px">
+    <span class="eb">Perangkat wearable</span>
+    <h2>Dua bentuk,<br>satu ekosistem data.</h2>
+    <div class="kartu" style="margin-top:50px;padding:10px 36px;width:760px">
+      <table style="width:100%;border-collapse:collapse;font-size:23px">
+        <tbody>
+        <tr><td style="padding:17px 0">Detak jantung & HRV</td><td style="text-align:right;font-family:var(--mono);color:var(--g)">30–220 bpm</td></tr>
+        <tr style="border-top:1px solid var(--line)"><td style="padding:17px 0">Saturasi oksigen</td><td style="text-align:right;font-family:var(--mono);color:var(--g)">70–100 %</td></tr>
+        <tr style="border-top:1px solid var(--line)"><td style="padding:17px 0">Suhu kontak kulit</td><td style="text-align:right;font-family:var(--mono);color:var(--g)">±0,1 °C</td></tr>
+        <tr style="border-top:1px solid var(--line)"><td style="padding:17px 0">EKG lead-I</td><td style="text-align:right;font-family:var(--mono);color:var(--g)">250 Hz</td></tr>
+        <tr style="border-top:1px solid var(--line)"><td style="padding:17px 0">Tekanan darah (PTT/PPG)</td><td style="text-align:right;font-family:var(--mono);color:var(--g)">terkalibrasi</td></tr>
+        <tr style="border-top:1px solid var(--line)"><td style="padding:17px 0">Konektivitas</td><td style="text-align:right;font-family:var(--mono);color:var(--g)">BLE 5.x</td></tr>
+        </tbody></table>
+    </div>
+  </div>
+  <div class="kaki"><span>Produk</span><span>05</span></div>
+</section>
+
+<!-- 6 · SINYAL -->
+<section class="s" aria-label="Sinyal vital">
+  <div class="isi">
+    <span class="eb">Dipantau kontinu</span>
+    <h2>Enam sinyal, satu riwayat.</h2>
+    <div class="grid" style="grid-template-columns:repeat(6,1fr);gap:26px;margin-top:90px">
+      <div class="kartu" style="padding:30px 16px;text-align:center"><img class="ikon" src="img/i-jantung.webp" alt="" style="margin:0 auto 16px"><b style="font-size:24px">Detak jantung</b><p class="muted" style="font-size:18px;margin-top:6px">& HRV</p></div>
+      <div class="kartu" style="padding:30px 16px;text-align:center"><img class="ikon" src="img/i-oksigen.webp" alt="" style="margin:0 auto 16px"><b style="font-size:24px">SpO₂</b><p class="muted" style="font-size:18px;margin-top:6px">saturasi oksigen</p></div>
+      <div class="kartu" style="padding:30px 16px;text-align:center"><img class="ikon" src="img/i-suhu.webp" alt="" style="margin:0 auto 16px"><b style="font-size:24px">Suhu tubuh</b><p class="muted" style="font-size:18px;margin-top:6px">kontak kulit</p></div>
+      <div class="kartu" style="padding:30px 16px;text-align:center"><img class="ikon" src="img/i-ekg.webp" alt="" style="margin:0 auto 16px"><b style="font-size:24px">EKG</b><p class="muted" style="font-size:18px;margin-top:6px">lead-I</p></div>
+      <div class="kartu" style="padding:30px 16px;text-align:center"><img class="ikon" src="img/i-tensi.webp" alt="" style="margin:0 auto 16px"><b style="font-size:24px">Tekanan darah</b><p class="muted" style="font-size:18px;margin-top:6px">estimasi</p></div>
+      <div class="kartu" style="padding:30px 16px;text-align:center"><img class="ikon" src="img/i-stres.webp" alt="" style="margin:0 auto 16px"><b style="font-size:24px">Indeks stres</b><p class="muted" style="font-size:18px;margin-top:6px">dari HRV</p></div>
+    </div>
+    <p class="lead" style="max-width:60ch;margin-top:70px">Setiap ikon adalah objek 3D porselen yang dimodelkan dan dirender lewat Blender CLI — bahasa visual yang sama di aplikasi, situs, video, dan poster.</p>
+  </div>
+  <div class="kaki"><span>Produk</span><span>06</span></div>
+</section>
+
+<!-- 7 · APLIKASI PASIEN -->
+<section class="s" aria-label="Aplikasi pasien">
+  <div class="isi">
+    <span class="eb">Aplikasi pasien</span>
+    <h2 style="max-width:9ch">Vital Anda, jelas sekilas.</h2>
+    <p class="lead" style="max-width:24ch">Beranda, detail vital, analisis tren, catat makan, dan konsultasi dalam satu aplikasi web yang bisa dipasang.</p>
+  </div>
+  <div class="hp" style="position:absolute;left:830px;top:150px;width:330px;transform:rotate(-4deg)"><img src="img/p-hr.webp" alt="Layar detak jantung"></div>
+  <div class="hp" style="position:absolute;left:1170px;top:90px;width:340px;z-index:2"><img src="img/p-home.webp" alt="Layar beranda pasien"></div>
+  <div class="hp" style="position:absolute;left:1520px;top:170px;width:330px;transform:rotate(4deg)"><img src="img/p-chat.webp" alt="Layar chat dokter"></div>
+  <div class="kaki"><span>Aplikasi</span><span>07</span></div>
+</section>
+
+<!-- 8 · EMPAT PERAN -->
+<section class="s" aria-label="Empat peran">
+  <div class="isi">
+    <span class="eb">Empat peran</span>
+    <h2>Satu platform, layar untuk tiap tugas.</h2>
+    <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:44px;margin-top:44px;align-items:start">
+      <div><div class="hp" style="width:290px;margin:0 auto"><img src="img/d-pasien.webp" alt="" style="height:560px;object-fit:cover;object-position:top"></div><h3 style="margin-top:24px;text-align:center">Pasien</h3><p class="muted" style="font-size:20px;margin-top:6px;text-align:center">Vital, riwayat, konsultasi</p></div>
+      <div><div class="hp" style="width:290px;margin:0 auto"><img src="img/d-dokter.webp" alt="" style="height:560px;object-fit:cover;object-position:top"></div><h3 style="margin-top:24px;text-align:center">Dokter</h3><p class="muted" style="font-size:20px;margin-top:6px;text-align:center">Papan jaga, antrean, catatan</p></div>
+      <div><div class="hp" style="width:290px;margin:0 auto"><img src="img/d-faskes.webp" alt="" style="height:560px;object-fit:cover;object-position:top"></div><h3 style="margin-top:24px;text-align:center">Admin faskes</h3><p class="muted" style="font-size:20px;margin-top:6px;text-align:center">Anggota berisiko, perangkat</p></div>
+      <div><div class="hp" style="width:290px;margin:0 auto"><img src="img/d-admin.webp" alt="" style="height:560px;object-fit:cover;object-position:top"></div><h3 style="margin-top:24px;text-align:center">Admin sistem</h3><p class="muted" style="font-size:20px;margin-top:6px;text-align:center">Pengguna, verifikasi, kalibrasi</p></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Aplikasi</span><span>08</span></div>
+</section>
+
+<!-- 9 · ALUR -->
+<section class="s" aria-label="Alur layanan">
+  <div class="isi">
+    <span class="eb">Alur layanan</span>
+    <h2>Dari pemakaian harian<br>hingga tindak lanjut klinis.</h2>
+    <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:30px;margin-top:80px">
+      <div class="kartu" style="padding:36px 32px"><div style="display:flex;justify-content:space-between"><img class="ikon" src="img/i-kalender.webp" alt="" style="width:96px;height:96px"><span style="font:500 22px var(--mono);color:var(--g)">01</span></div><h3 style="margin-top:22px">Daftar & kalibrasi</h3><p class="muted" style="font-size:21px;margin-top:12px;line-height:1.5">Pengguna didaftarkan ke unit, perangkat dikalibrasi ke alat acuan.</p></div>
+      <div class="kartu" style="padding:36px 32px"><div style="display:flex;justify-content:space-between"><img class="ikon" src="img/i-jam.webp" alt="" style="width:96px;height:96px"><span style="font:500 22px var(--mono);color:var(--g)">02</span></div><h3 style="margin-top:22px">Pantau kontinu</h3><p class="muted" style="font-size:21px;margin-top:12px;line-height:1.5">Vital siang-malam dikirim ke gateway lalu ke cloud; tetap merekam saat luring.</p></div>
+      <div class="kartu" style="padding:36px 32px"><div style="display:flex;justify-content:space-between"><img class="ikon" src="img/i-grafik.webp" alt="" style="width:96px;height:96px"><span style="font:500 22px var(--mono);color:var(--g)">03</span></div><h3 style="margin-top:22px">Analisis & triase</h3><p class="muted" style="font-size:21px;margin-top:12px;line-height:1.5">Indeks stres serta status Normal, Waspada, atau Kritis per individu.</p></div>
+      <div class="kartu" style="padding:36px 32px"><div style="display:flex;justify-content:space-between"><img class="ikon" src="img/i-chat.webp" alt="" style="width:96px;height:96px"><span style="font:500 22px var(--mono);color:var(--g)">04</span></div><h3 style="margin-top:22px">Konsultasi</h3><p class="muted" style="font-size:21px;margin-top:12px;line-height:1.5">Kasus berisiko diteruskan ke dokter atau psikolog lewat teleconsult.</p></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Cara kerja</span><span>09</span></div>
+</section>
+
+<!-- 10 · ARSITEKTUR -->
+<section class="s" aria-label="Arsitektur">
+  <div class="isi">
+    <span class="eb">Arsitektur</span>
+    <h2>Empat lapis, edge sampai klinik.</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:80px;align-items:stretch">
+      <div class="kartu" style="padding:34px 30px;margin-right:34px"><p class="muted" style="font:500 17px var(--mono);letter-spacing:.1em">LAPIS 1</p><h3 style="margin-top:12px">Akuisisi</h3><p style="font-size:21px;margin-top:14px;line-height:1.5;color:var(--ink2)">TeleBand & TeleRing (ESP32-C6): PPG, EKG, suhu, IMU, pra-proses on-device.</p></div>
+      <div class="kartu" style="padding:34px 30px;margin-right:34px"><p class="muted" style="font:500 17px var(--mono);letter-spacing:.1em">LAPIS 2</p><h3 style="margin-top:12px">Gateway</h3><p style="font-size:21px;margin-top:14px;line-height:1.5;color:var(--ink2)">Aplikasi web (Web Bluetooth) atau gateway institusi; buffer luring, TLS.</p></div>
+      <div class="kartu" style="padding:34px 30px;margin-right:34px"><p class="muted" style="font:500 17px var(--mono);letter-spacing:.1em">LAPIS 3</p><h3 style="margin-top:12px">Cloud AI</h3><p style="font-size:21px;margin-top:14px;line-height:1.5;color:var(--ink2)">Firebase: basis data deret waktu, mesin inferensi, aturan klinis bertingkat.</p></div>
+      <div class="kartu" style="padding:34px 30px"><p class="muted" style="font:500 17px var(--mono);letter-spacing:.1em">LAPIS 4</p><h3 style="margin-top:12px">Tindak lanjut</h3><p style="font-size:21px;margin-top:14px;line-height:1.5;color:var(--ink2)">Dasbor faskes, chat & video call WebRTC, notifikasi, rencana intervensi.</p></div>
+    </div>
+    <div style="display:flex;gap:16px;margin-top:56px;flex-wrap:wrap"><span class="chip">Enkripsi saat transit</span><span class="chip">Data dipisah per unit</span><span class="chip">Akses per peran</span><span class="chip">Mode luring</span></div>
+  </div>
+  <div class="kaki"><span>Teknologi</span><span>10</span></div>
+</section>
+
+<!-- 11 · SEGMEN -->
+<section class="s" aria-label="Segmen">
+  <div class="isi">
+    <span class="eb">Segmen penerapan</span>
+    <h2>Untuk populasi yang tinggal<br>dan bekerja bersama.</h2>
+    <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:30px;margin-top:70px">
+      <div class="kartu" style="padding:34px 30px"><img class="ikon" src="img/i-gedung.webp" alt="" style="width:100px;height:100px"><h3 style="margin-top:18px">Perusahaan</h3><p class="muted" style="font-size:21px;margin-top:12px;line-height:1.5">Kesehatan karyawan, beban kerja, K3 dan absensi.</p></div>
+      <div class="kartu" style="padding:34px 30px"><img class="ikon" src="img/i-perisai.webp" alt="" style="width:100px;height:100px"><h3 style="margin-top:18px">Pesantren</h3><p class="muted" style="font-size:21px;margin-top:12px;line-height:1.5">Asrama padat: deteksi cepat demam dan penurunan saturasi.</p></div>
+      <div class="kartu" style="padding:34px 30px"><img class="ikon" src="img/i-kalender.webp" alt="" style="width:100px;height:100px"><h3 style="margin-top:18px">Sekolah berasrama</h3><p class="muted" style="font-size:21px;margin-top:12px;line-height:1.5">Stres ujian dan kualitas tidur siswa.</p></div>
+      <div class="kartu" style="padding:34px 30px"><img class="ikon" src="img/i-dokter.webp" alt="" style="width:100px;height:100px"><h3 style="margin-top:18px">Panti wreda</h3><p class="muted" style="font-size:21px;margin-top:12px;line-height:1.5">Lansia berisiko kardiovaskular; alarm otomatis ke perawat.</p></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Pasar</span><span>11</span></div>
+</section>
+
+<!-- 12 · PETA JALAN -->
+<section class="s" aria-label="Peta pengembangan">
+  <img src="img/analisis.webp" alt="" style="position:absolute;right:70px;top:120px;width:700px">
+  <div class="isi">
+    <span class="eb">Peta pengembangan</span>
+    <h2 style="max-width:12ch">Bertahap, dimulai dari stres.</h2>
+    <div style="display:grid;gap:20px;margin-top:56px;max-width:1000px">
+      <div class="cekung" style="display:flex;gap:30px;align-items:center;padding:24px 34px"><span style="font:500 20px var(--mono);color:var(--g);flex:none">FASE 1</span><p style="font-size:24px"><b>Pemantauan stres</b> — HRV, detak jantung istirahat, pola tidur, integrasi psikolog.</p></div>
+      <div class="cekung" style="display:flex;gap:30px;align-items:center;padding:24px 34px"><span style="font:500 20px var(--mono);color:var(--g);flex:none">FASE 2</span><p style="font-size:24px"><b>Vital lengkap</b> — SpO₂, suhu, EKG lead-I dengan eskalasi klinis.</p></div>
+      <div class="cekung" style="display:flex;gap:30px;align-items:center;padding:24px 34px"><span style="font:500 20px var(--mono);color:var(--g);flex:none">FASE 3</span><p style="font-size:24px"><b>Estimasi tekanan darah</b> — validasi PTT/PPG terhadap alat acuan.</p></div>
+      <div class="cekung" style="display:flex;gap:30px;align-items:center;padding:24px 34px"><span style="font:500 20px var(--mono);color:var(--g);flex:none">FASE 4</span><p style="font-size:24px"><b>Skala institusi</b> — multi-unit, analitik populasi, laporan berkala.</p></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Rencana</span><span>12</span></div>
+</section>
+
+<!-- 13 · PENUTUP -->
+<section class="s" aria-label="Penutup">
+  <div class="titik"></div>
+  <img src="img/konsultasi.webp" alt="" style="position:absolute;right:60px;top:110px;width:860px">
+  <div class="isi">
+    <span class="eb">Coba sekarang</span>
+    <h1 style="font-size:96px;max-width:10ch">Masuk sebagai tamu.</h1>
+    <p class="lead" style="max-width:26ch">Tanpa daftar — pilih peran pasien, dokter, atau admin faskes dan jelajahi alurnya.</p>
+    <div style="display:flex;gap:36px;align-items:center;margin-top:56px">
+      <div class="cekung" style="width:210px;height:210px;padding:22px;background:#fff"><img src="img/qr.svg" alt="QR menuju aplikasi TeleCare" style="width:100%;height:100%"></div>
+      <div><p style="font:500 30px var(--mono);color:var(--g)">telecare-id.web.app</p>
+        <p style="font-size:22px;margin-top:22px;line-height:1.6;color:var(--ink2)"><b>Fajar Jelang Riyadi</b> (ketua) · Faizal Tri Widiandika · Sholeh Putra Utama<br>Pembimbing: Dr. Fuad Anwar, S.Si., M.Si.</p></div>
+    </div>
+  </div>
+  <div class="kaki"><span><b>TeleCare</b> · Fisika FMIPA UNS</span><span>13</span></div>
+</section>
+
+</div>
+
+<div class="nav" aria-label="Navigasi slide">
+  <button type="button" id="prev" aria-label="Slide sebelumnya">←</button>
+  <output id="pos">1 / 13</output>
+  <button type="button" id="next" aria-label="Slide berikutnya">→</button>
+</div>
+
+<script>
+(function () {
+  const deck = document.getElementById('deck');
+  const slides = Array.from(deck.querySelectorAll('.s'));
+  // Tiap slide dibungkus bingkai berukuran hasil skala, supaya tata letak tetap mengalir.
+  const bingkai = slides.map((s) => {
+    const b = document.createElement('div');
+    b.className = 'bingkai';
+    s.parentNode.insertBefore(b, s);
+    b.appendChild(s);
+    return b;
+  });
+  function skala() {
+    const lebar = Math.min(deck.clientWidth - 32, 1600);
+    const k = Math.max(0.15, lebar / 1920);
+    slides.forEach((s, i) => {
+      s.style.transform = 'scale(' + k + ')';
+      bingkai[i].style.width = 1920 * k + 'px';
+      bingkai[i].style.height = 1080 * k + 'px';
+    });
+  }
+  skala();
+  addEventListener('resize', skala);
+
+  const pos = document.getElementById('pos');
+  let kini = 0;
+  function ke(i) {
+    kini = Math.max(0, Math.min(slides.length - 1, i));
+    bingkai[kini].scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    pos.textContent = (kini + 1) + ' / ' + slides.length;
+  }
+  document.getElementById('prev').onclick = () => ke(kini - 1);
+  document.getElementById('next').onclick = () => ke(kini + 1);
+  addEventListener('keydown', (e) => {
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); ke(kini + 1); }
+    if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); ke(kini - 1); }
+  });
+  const io = new IntersectionObserver((es) => es.forEach((en) => {
+    if (en.isIntersecting && en.intersectionRatio > 0.55) {
+      kini = bingkai.indexOf(en.target);
+      pos.textContent = (kini + 1) + ' / ' + slides.length;
+    }
+  }), { threshold: [0.55] });
+  bingkai.forEach((b) => io.observe(b));
+})();
+</script>

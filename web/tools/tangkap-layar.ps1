@@ -1,4 +1,4 @@
-<#
+﻿<#
   Menangkap satu tangkapan layar untuk SETIAP halaman TeleCare, dipakai sebagai
   bahan baku dua video showcase (promo & tutorial).
 
@@ -13,7 +13,8 @@
 param(
   [string]$Basis = 'http://127.0.0.1:8950',
   [ValidateSet('desktop', 'ponsel', 'semua')][string]$Ragam = 'semua',
-  [int]$DurasiMs = 7000
+  [int]$DurasiMs = 7000,
+  [string]$Hanya = ''
 )
 
 . (Join-Path $PSScriptRoot 'uji-browser.ps1')
@@ -64,27 +65,42 @@ $HALAMAN = @(
 $MEDIA = @('--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required')
 
 $akar = Split-Path $PSScriptRoot -Parent
+
+function Potong-Gambar([string]$Path, [int]$W, [int]$H) {
+  Add-Type -AssemblyName System.Drawing
+  $src = [System.Drawing.Image]::FromFile($Path)
+  $bmp = New-Object System.Drawing.Bitmap $W, $H
+  $g = [System.Drawing.Graphics]::FromImage($bmp)
+  $g.DrawImage($src, (New-Object System.Drawing.Rectangle 0, 0, $W, $H), (New-Object System.Drawing.Rectangle 0, 0, $W, $H), [System.Drawing.GraphicsUnit]::Pixel)
+  $g.Dispose(); $src.Dispose()
+  $bmp.Save($Path, [System.Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
+}
 $ragamDipakai = if ($Ragam -eq 'semua') { @('desktop', 'ponsel') } else { @($Ragam) }
 
 $catatan = New-Object System.Collections.Generic.List[object]
 $i = 0
 foreach ($h in $HALAMAN) {
   $i++
+  if ($Hanya -and -not (($Hanya -split ',') -contains $h.nama)) { continue }
   $no = '{0:d2}' -f $i
   $url = if ($h.situs) { "$Basis/" } else { "$Basis/app/?demo=$($h.peran)$($h.rute)" }
   foreach ($r in $ragamDipakai) {
-    $lebar = if ($r -eq 'ponsel') { 440 } else { 1920 }
-    $tinggi = if ($r -eq 'ponsel') { 900 } else { 1080 }
+    # Ponsel: jendela Edge tanpa kepala minimal ~492px, jadi aplikasi dirender
+    # di iframe 430x932 (tests/bingkai.html) lalu gambar dipotong ke 430 lebar.
+    $lebar = if ($r -eq 'ponsel') { 520 } else { 1920 }
+    $tinggi = if ($r -eq 'ponsel') { 932 } else { 1080 }
+    $urlR = if ($r -eq 'ponsel') { "$Basis/tests/bingkai.html?u=" + [uri]::EscapeDataString($url) } else { $url }
     $dir = Join-Path $akar "build\shots\$r"
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
     $berkas = Join-Path $dir "$no-$($h.nama).png"
     $ok = $false
     try {
-      $ok = Ambil-Layar -Url $url -Keluaran $berkas -Lebar $lebar -Tinggi $tinggi `
+      $ok = Ambil-Layar -Url $urlR -Keluaran $berkas -Lebar $lebar -Tinggi $tinggi `
         -DurasiMs $DurasiMs -Label "shot-$($h.nama)-$r" -FlagTambahan $MEDIA -BatasDetik 40
     } catch {
       Write-Host ("  galat: " + $_.Exception.Message)
     }
+    if ($r -eq 'ponsel' -and (Test-Path $berkas)) { Potong-Gambar $berkas 430 932 }
     $ukuran = if (Test-Path $berkas) { (Get-Item $berkas).Length } else { 0 }
     Write-Host ('{0} {1,-9} {2,-26} {3} bytes' -f $no, $r, $h.nama, $ukuran)
     if ($r -eq 'desktop') {

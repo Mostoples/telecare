@@ -28,9 +28,9 @@ function initHero() {
   const root = new THREE.Group();
   scene.add(root);
 
-  const COL_A = new THREE.Color('#28B87A');
+  const COL_A = new THREE.Color('#049A5B');
   const COL_B = new THREE.Color('#7CC3E8');
-  const COL_C = new THREE.Color('#A9E5C8');
+  const COL_C = new THREE.Color('#28B87A');
 
   /* --- titik-titik pada bola (distribusi Fibonacci) --- */
   const N = 1400, R = 6.4;
@@ -66,7 +66,7 @@ function initHero() {
   const mat = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    blending: THREE.NormalBlending,
     uniforms: { uTime: { value: 0 }, uScale: { value: 1 } },
     vertexShader: /* glsl */`
       attribute float aSize;
@@ -113,7 +113,7 @@ function initHero() {
   const linkGeo = new THREE.BufferGeometry();
   linkGeo.setAttribute('position', new THREE.Float32BufferAttribute(linkPos, 3));
   root.add(new THREE.LineSegments(linkGeo, new THREE.LineBasicMaterial({
-    color: 0x2FA77E, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false
+    color: 0x2FA77E, transparent: true, opacity: 0.2, blending: THREE.NormalBlending, depthWrite: false
   })));
 
   /* --- cincin orbit --- */
@@ -153,8 +153,8 @@ function initHero() {
   const ecgCurve = new THREE.CatmullRomCurve3(ecgPts, true);
   const ecgMesh = new THREE.Mesh(
     new THREE.TubeGeometry(ecgCurve, 700, 0.035, 6, true),
-    new THREE.MeshBasicMaterial({ color: 0x6FD3A6, transparent: true, opacity: 0.62,
-      blending: THREE.AdditiveBlending, depthWrite: false })
+    new THREE.MeshBasicMaterial({ color: 0x049A5B, transparent: true, opacity: 0.55,
+      blending: THREE.NormalBlending, depthWrite: false })
   );
   ecgMesh.rotation.x = -0.42;
   root.add(ecgMesh);

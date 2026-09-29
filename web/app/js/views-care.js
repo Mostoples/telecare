@@ -82,15 +82,11 @@
       <div class="spec-grid">
         ${D.SPECIALTIES.map((s) => `
           <a class="spec" href="#/konsultasi/spesialis/${s.id}">
-            <i style="background:${s.color}">${s.emoji}</i>${esc(s.name)}</a>`).join('')}
+            <i class="tile3d">${s.i3d ? TC.i3d(s.i3d) : s.emoji}</i>${esc(s.name)}</a>`).join('')}
       </div>
 
       <div class="promo mt2">
-        <svg class="promo__deco" viewBox="0 0 200 200" fill="none" aria-hidden="true">
-          <circle cx="100" cy="100" r="86" stroke="#fff" stroke-width="2"/>
-          <circle cx="100" cy="100" r="58" stroke="#fff" stroke-width="2" stroke-dasharray="4 8"/>
-          <path d="M30 100h26l12-26 16 54 13-38 8 10h62" stroke="#fff" stroke-width="3"
-                stroke-linecap="round" stroke-linejoin="round"/></svg>
+        ${TC.ilus3d('konsultasi', 'promo__art')}
         <h3>Data vital Anda ikut terkirim</h3>
         <p>Saat konsultasi dimulai, dokter menerima ringkasan detak jantung, SpO₂, suhu, dan
            tekanan darah terbaru dari perangkat Anda — tanpa perlu diketik ulang.</p>

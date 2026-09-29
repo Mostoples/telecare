@@ -110,9 +110,29 @@
       vBtn.querySelector('use').setAttribute('href', playing ? '#i-play' : '#i-pause');
       vBtn.querySelector('span').textContent = playing ? 'Putar' : 'Jeda';
     });
+    // Tab video: showreel, promo, use case. Video yang belum ada dilewati
+    // dengan menyembunyikan tabnya, bukan membuang seluruh pemutar.
+    const cap = $('#videoCap');
+    $$('.vtabs [data-vid]').forEach((t) => t.addEventListener('click', () => {
+      $$('.vtabs [data-vid]').forEach((x) => x.setAttribute('aria-selected', String(x === t)));
+      vid.src = t.dataset.vid;
+      if (cap) cap.textContent = t.dataset.cap;
+      vid.play().catch(() => {});
+      vBtn.querySelector('use').setAttribute('href', '#i-pause');
+      vBtn.querySelector('span').textContent = 'Jeda';
+    }));
+    const sBtn = $('#videoSound');
+    if (sBtn) sBtn.addEventListener('click', () => {
+      vid.muted = !vid.muted;
+      if (!vid.muted) vid.play().catch(() => {});
+      sBtn.querySelector('span').textContent = vid.muted ? 'Suara' : 'Bisukan';
+    });
     vid.addEventListener('error', () => {
-      const w = vid.closest('.film-wrap');
-      if (w) w.style.display = 'none';
+      const aktif = $('.vtabs [aria-selected="true"]');
+      if (aktif) aktif.hidden = true;
+      const lain = $('.vtabs [data-vid]:not([hidden])');
+      if (lain && lain !== aktif) lain.click();
+      else { const w = vid.closest('.film-wrap'); if (w) w.style.display = 'none'; }
     });
   }
 

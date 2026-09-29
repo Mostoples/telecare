@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="UTF-8">
+<title>Bingkai ponsel</title>
+<!-- Edge tanpa kepala tidak bisa membuka jendela lebih sempit dari ~492px, jadi
+     tampilan ponsel dirender di iframe 430px lalu dipotong. Pemakaian:
+     /tests/bingkai.html?u=<url-aplikasi-ter-encode>&h=932 -->
+<style>html,body{margin:0;background:#EEF3F1;overflow:hidden}iframe{display:block;border:0}</style>
+</head><body>
+<script>
+  const q = new URLSearchParams(location.search);
+  const f = document.createElement('iframe');
+  f.width = q.get('w') || 430; f.height = q.get('h') || 932;
+  f.allow = 'camera; microphone; autoplay';
+  f.src = q.get('u') || '/app/';
+  // &s=<px> menggulir isi iframe (sama asal) setelah dimuat, untuk menangkap
+  // bagian bawah halaman pada viewport normal.
+  const gulir = +(q.get('s') || 0);
+  if (gulir) f.addEventListener('load', () => {
+    let n = 0;
+    const t = setInterval(() => { f.contentWindow.scrollTo({ top: gulir, behavior: 'instant' }); if (++n > 8) clearInterval(t); }, 250);
+  });
+  // &cek=1: setelah 7 dtk, laporkan elemen teratas di titik tengah dock ke <title>.
+  if (q.get('cek')) f.addEventListener('load', () => setTimeout(() => {
+    const d = f.contentDocument, pts = [[215, f.height - 40], [110, f.height - 40], [320, f.height - 40]];
+    document.title = pts.map(([x, y]) => { const e = d.elementFromPoint(x, y);
+      return e ? (e.closest('.tabbar') ? 'DOCK' : e.tagName + '.' + e.className) : 'null'; }).join(' | ');
+    const t = d.querySelector('.tabbar'); const cs = t && d.defaultView.getComputedStyle(t);
+    document.title += ' || ' + (cs ? [cs.display, cs.zIndex, cs.position, t.getBoundingClientRect().top|0].join(',') : 'tanpa-dock');
+  }, 7000));
+  document.body.appendChild(f);
+</script>
+</body></html>

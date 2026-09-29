@@ -18,7 +18,8 @@
       "database.rules.json",
       "**/*.py",
       "**/*.md",
-      "blender/build.log"
+      "blender/build.log",
+      "tests/**"
     ],
     "cleanUrls": true,
     "headers": [

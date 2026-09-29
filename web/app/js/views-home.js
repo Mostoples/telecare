@@ -14,15 +14,18 @@
   function deviceBar() {
     const st = TC.Devices.statusText();
     const pending = Store.state.pendingSamples;
-    return `<button class="devbar${st.on ? '' : ' is-off'}" data-devbar>
-      <span class="devbar__ico">${icon(st.on ? 'watch' : 'bt')}</span>
-      <span style="min-width:0">
-        <b>${esc(st.t)}</b>
-        <small>${st.on
-          ? (pending ? pending + ' sampel menunggu sinkronisasi' : 'buffer jam kosong')
-          : 'ketuk untuk menyambungkan'}</small>
+    // Kartu perangkat bergaya "device card": render 3D TeleBand, angka besar,
+    // tombol pil sinkron. Seluruh kartu tetap satu tombol menuju /perangkat.
+    return `<button class="devbar devcard${st.on ? '' : ' is-off'}" data-devbar>
+      <span class="devcard__txt">
+        <span class="chip ${st.on ? 'chip--g' : 'chip--a'}">${st.on ? '<i class="dotlive"></i> Tersambung' : 'Belum tersambung'}</span>
+        <b class="devcard__nama">${esc(st.t.split('·')[0].trim() || 'TeleBand')}</b>
+        <small>${st.on ? esc(st.t.split('·').slice(1).join('·').trim() || 'Perangkat aktif') : 'Ketuk untuk menyambungkan'}</small>
+        <span class="devcard__angka">${st.on ? pending : '—'}<u>${st.on ? 'sampel' : ''}</u></span>
+        <small>${st.on ? (pending ? 'menunggu sinkronisasi' : 'buffer jam kosong') : 'hubungkan lewat Bluetooth'}</small>
       </span>
-      <span class="sync" data-sync>${icon('sync')}</span>
+      <img class="devcard__img" src="../assets/3d/ikon/${st.on ? 'jam' : 'bluetooth'}.webp" alt="" draggable="false">
+      <span class="sync devcard__sync" data-sync>${icon('sync')} Sinkron</span>
     </button>`;
   }
 
@@ -67,19 +70,23 @@
     const v = TC.Vitals.snapshot();
     return `<div class="vital-grid">
       <button class="vital vital--hr" data-vital="hr">
-        <span class="vital__lab">${icon('heart')} Detak jantung</span>
+        ${TC.i3d('jantung', 'vital__ico')}
+        <span class="vital__lab">Detak jantung</span>
         <span class="vital__val" data-v="hr">${v.hr}<u>bpm</u></span>
         <canvas data-spark="hr"></canvas></button>
       <button class="vital vital--spo" data-vital="spo2">
-        <span class="vital__lab">${icon('spo2')} SpO₂</span>
+        ${TC.i3d('oksigen', 'vital__ico')}
+        <span class="vital__lab">SpO₂</span>
         <span class="vital__val" data-v="spo2">${v.spo2}<u>%</u></span>
         <canvas data-spark="spo2"></canvas></button>
       <button class="vital vital--tmp" data-vital="temp">
-        <span class="vital__lab">${icon('temp')} Suhu</span>
+        ${TC.i3d('suhu', 'vital__ico')}
+        <span class="vital__lab">Suhu</span>
         <span class="vital__val" data-v="temp">${v.temp}<u>°C</u></span>
         <canvas data-spark="temp"></canvas></button>
       <button class="vital vital--bp" data-vital="bp">
-        <span class="vital__lab">${icon('bp')} Tekanan darah</span>
+        ${TC.i3d('tensi', 'vital__ico')}
+        <span class="vital__lab">Tekanan darah</span>
         <span class="vital__val" data-v="bp">${v.sys}/${v.dia}</span>
         <canvas data-spark="sys"></canvas></button>
     </div>`;
@@ -201,10 +208,10 @@
 
       <div class="section-title">${icon('sparkle')} Aksi cepat</div>
       <div class="quick">
-        <a href="#/konsultasi"><i style="background:#EDF9F2;color:#03804C">${icon('stetho')}</i>Konsultasi</a>
-        <a href="#/sesi/kamera"><i style="background:#FFF1D6;color:#8A5D00">${icon('cam')}</i>Catat Sesi</a>
-        <a href="#/perangkat"><i style="background:#DCEEF9;color:#075A85">${icon('watch')}</i>Perangkat</a>
-        <a href="#/riwayat"><i style="background:#EEEBFD;color:#4A3BB8">${icon('doc')}</i>Riwayat</a>
+        <a href="#/konsultasi"><i class="tile3d">${TC.i3d('stetoskop')}</i>Konsultasi</a>
+        <a href="#/sesi/kamera"><i class="tile3d">${TC.i3d('makan')}</i>Catat Sesi</a>
+        <a href="#/perangkat"><i class="tile3d">${TC.i3d('jam')}</i>Perangkat</a>
+        <a href="#/riwayat"><i class="tile3d">${TC.i3d('grafik')}</i>Riwayat</a>
       </div>
 
       ${lastMeal ? `
@@ -248,11 +255,7 @@
       </div>
 
       <div class="promo mt2">
-        <svg class="promo__deco" viewBox="0 0 200 200" fill="none" aria-hidden="true">
-          <circle cx="100" cy="100" r="92" stroke="#fff" stroke-width="2"/>
-          <circle cx="100" cy="100" r="66" stroke="#fff" stroke-width="2" stroke-dasharray="5 9"/>
-          <path d="M20 100h32l14-32 20 66 16-46 10 12h68" stroke="#fff" stroke-width="3"
-                stroke-linecap="round" stroke-linejoin="round"/></svg>
+        ${TC.ilus3d('produk', 'promo__art')}
         <h3>Hubungkan lebih banyak perangkat</h3>
         <p>Sabuk EKG, tensimeter, timbangan, hingga patch glukosa — semuanya masuk ke riwayat yang sama.</p>
         <a class="btn btn--soft btn--sm" href="#/perangkat/pindai">Pindai perangkat ${icon('arrow')}</a>

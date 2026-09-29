@@ -5,7 +5,7 @@ selesai** — supaya siapa pun (termasuk sesi kerja berikutnya) bisa melanjutkan
 menebak-nebak. Untuk cara memakai dan menjalankan proyek, lihat [README.md](README.md);
 berkas ini khusus soal *progres* dan *alasan di balik keputusan*.
 
-**Diperbarui:** 29 September 2026
+**Diperbarui:** 30 September 2026
 
 ---
 
@@ -39,6 +39,20 @@ berkas ini khusus soal *progres* dan *alasan di balik keputusan*.
 ## 2. Status per bagian
 
 Legenda: ✅ selesai & terverifikasi · 🟡 berjalan, ada batasan · ⬜ belum dikerjakan
+
+### Arah visual (30 Sep 2026) — WAJIB dibaca sebelum mengubah tampilan
+
+Pengguna menolak gaya "porselen putih elegan" dan menunjuk dua proyek lokal sebagai acuan:
+
+- **UI → AQUENT** (`C:/Users/mosto/Desktop/AQUENT`, lihat `app/css/style.css` dan
+  `deck/build/screens/`): neumorfisme terang abu-biru, kartu timbul radius 28, chip berisi warna lembut,
+  tombol utama gradien radius 22, tombol ikon kotak-bulat 46 px, dock bawah dengan ikon 3D (abu-abu saat
+  tidak aktif) + FAB bulat, angka tebal, ikon 3D Blender **duotone mengilap**. Aksen TeleCare tetap **hijau**.
+- **Showreel → RePulse** (`C:/Users/mosto/Desktop/repulse`, `deliverables/RePulse_Showcase.mp4`): yang
+  ditiru **sinematiknya** (manusia 3D MakeHuman, narasi sehari-hari, dolly pelan, DOF, cahaya praktis,
+  eyebrow + judul serif), **bukan gelapnya** — TeleCare tetap terang (sinar pagi lewat jendela).
+- **Mobile-first**: aplikasi satu kolom 430 px; di layar lebar tampil sebagai bingkai ponsel di tengah,
+  tanpa sidebar desktop.
 
 ### Situs penelitian (landing page)
 
@@ -149,6 +163,12 @@ Urut dari yang paling awal.
    (21 commit: 1 firmware + 19 web + 1 merge). Firmware diverifikasi identik dengan aslinya —
    `git diff 9809bd8 HEAD -- . ':(exclude)web'` kosong.
 
+18. **Rombak ke gaya AQUENT + showreel sinematik (29–30 Sep).** Setelah dua putaran yang ditolak
+   (porselen putih, lalu neumorfisme setengah jadi), UI aplikasi & situs ditulis ulang mengikuti
+   AQUENT; ikon 3D dirender ulang dengan resep AQUENT (gaya "aqua"); showreel baru 30 dtk dengan manusia
+   3D ber-TeleBand ([blender/build_showreel.py](blender/build_showreel.py), [blender/manusia.py](blender/manusia.py));
+   promo, use case, tutorial, poster, deck, loop hero ikut diperbarui. Uji e2e 51/51. Sudah di-deploy.
+
 ## 4. Keputusan teknis & alasannya
 
 Bagian ini yang paling mudah terlupa, jadi ditulis lengkap.
@@ -226,6 +246,21 @@ undangan, jadi ia adalah kunci akses. `uid()` lama hanya 7 karakter `Math.random
 
 ---
 
+### Aset 3D & video (Sep 2026)
+
+- **Gaya ikon "aqua"** (bawaan [blender/build_ikon3d.py](blender/build_ikon3d.py)): transform *Standard*,
+  eksposur -0.35, dunia bergradien, 4 lampu area, tanpa lantai bayangan; warna berwarna → gradien hijau
+  (`AQ["dalam"]`→`AQ["muda"]`), putih → putih, tinta → hijau-gelap. `--gaya porselen` masih tersedia.
+- **Render frame demi frame dari Python** (tanpa keyframe) di build_video/build_usecase/build_showreel;
+  frame yang sudah ada dilewati → render yang terputus bisa dilanjutkan.
+- **Manusia 3D**: MPFB (ekstensi Blender) + aset MakeHuman CC0 dari `Desktop/repulse/work/assets_dl/mpfb/sys`.
+  TeleBand di pergelangan dibuat prosedural (`jam_pergelangan`) karena model ikon TeleBand tidak pas ukuran
+  lengan; orientasi punggung tangan dihitung dari tulang jari.
+- **Sinar pagi**: dinding kiri diberi bukaan jendela sungguhan; pelat "gobo" tipis + boolean gagal melubangi.
+- **Latar transparan dikomposit ke #E9EFF3** oleh ffmpeg agar warna video = warna UI.
+- **Sketchfab**: token hanya lewat env `SKETCHFAB_TOKEN` (repo publik). Model mentah di `build/sketchfab/`,
+  kredit di `assets/credits/sketchfab.json` dan di landing.
+
 ## 5. Bug yang pernah ditemukan (jangan terulang)
 
 Ditulis karena beberapa di antaranya tidak terlihat sampai benar-benar diuji.
@@ -258,6 +293,12 @@ Ditulis karena beberapa di antaranya tidak terlihat sampai benar-benar diuji.
 | `capcut` memanggil dirinya sampai tumpukan penuh | Fungsi pembantu bernama `Capcut` memanggil perintah `capcut`; nama sama karena PowerShell tidak peduli besar kecil huruf | Fungsi diganti nama `Panggil-Capcut` dan memanggil `node <index.js>` langsung |
 | Skrip CapCut menggantung tanpa pesan | `-q` di akhir pemanggilan fungsi dibaca PowerShell sebagai nama parameter, lalu menunggu masukan | Flag `-q` dihapus |
 | Skrip CapCut berhenti setelah `init` | `capcut` menulis petunjuk ke stderr meski berhasil, dan `ErrorActionPreference = 'Stop'` mengubahnya jadi galat yang menghentikan skrip | Preferensi dilonggarkan hanya selama pemanggilan, keberhasilan dinilai dari kode keluar |
+| Render 3–4x lebih lambat | Proses Blender lain (`tools/blender/promo.py`, **bukan milik proyek ini**) memakai GPU yang sama | Jangan matikan; pakai `use_persistent_data` + denoiser OptiX, lanjutkan render terputus |
+| Material "has been removed" antar-adegan | Cache `_MAT` menyimpan material yang sudah dihapus | `BI._MAT.clear()` di awal tiap adegan |
+| Tangkapan ponsel terpotong (440 px) | Edge headless minimal ±492 px | Render di iframe 430 px ([tests/bingkai.html](tests/bingkai.html)) lalu dipotong |
+| Dock "hilang", tinggal lingkaran hijau di tangkapan | Artefak komposit screenshot headless (dock tetap teratas — dicek dengan elementFromPoint, `bingkai.html?cek=1`) | Bukan bug aplikasi; abaikan |
+| Baris daftar meluap ke samping | `.list` tak lagi memotong isi setelah baris jadi kartu terpisah | `.row{overflow:hidden;min-width:0}` + elipsis |
+| rapikan_alfa merusak tepi bila diulang | Rumus menggeser seluruh kurva alfa | Ambang keras (≤12 → 0), idempoten |
 | Bantalan suara video praktis tak terdengar | Rantai `amix` + `volume=0.30` menghasilkan puncak -37 dB | `volume` diganti `loudnorm=I=-24:TP=-3` |
 
 ---
@@ -466,7 +507,18 @@ app/js/views-profile.js                      profil, perangkat, kalibrasi, penga
 app/js/views-roles.js                        layar dokter, admin faskes, admin platform
 app/js/app.js                                rute, navigasi per peran, boot
 
-blender/build_assets.py                      generator seluruh aset 3D
+blender/build_assets.py                      TeleBand & TeleRing (GLB, still, turntable)
+blender/build_ikon3d.py                      ikon 3D (gaya aqua; --anim; --ilustrasi)
+blender/manusia.py                           manusia MakeHuman + pose + TeleBand pergelangan
+blender/build_showreel.py                    showreel sinematik 8 shot (sr-*)
+blender/build_video.py                       loop hero, dekor, pola (+ shot lama)
+blender/build_usecase.py                     4 adegan use case: Sketchfab + aset Blender
+css/neu.css                                  lapisan gaya AQUENT untuk situs
+promosi/poster.html · promosi/deck/          poster A2 & deck 13 slide (+ PDF/PNG)
+tests/e2e.* · tools/uji-e2e.ps1              uji end-to-end 51 skenario
+tests/bingkai.html                           iframe 430 px, &s=gulir, &cek=1 (probe dock)
+tools/sketchfab.py · tools/rakit_anim.py     API Sketchfab; frame → WebP animasi
+tools/rakit_video.py · tools/cetak-poster.ps1   hero/showreel/promo/usecase; poster & deck → PDF
 database.rules.json · firebase.json          aturan RTDB & konfigurasi hosting
 ```
 
@@ -487,6 +539,19 @@ python tools/serve.py 8950
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\tangkap-layar.ps1   # ± 12 menit
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\bangun-video.ps1    # ± 12 menit
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\bangun-capcut.ps1 -Bersihkan
+
+# aset & video (Blender 5.2, GPU OptiX; server lokal hidup untuk tangkap-layar)
+B="C:/Program Files/Blender Foundation/Blender 5.2/blender.exe"; R="$(pwd -W)"
+"$B" -b -noaudio -P blender/build_ikon3d.py -- --root "$R" --sampel 128            # ikon diam
+"$B" -b -noaudio -P blender/build_ikon3d.py -- --root "$R" --anim --sampel 32      # ikon animasi
+python tools/rakit_anim.py build/anim-ikon assets/3d/ikon-anim --ms 80 --mutu 78
+"$B" -b -noaudio -P blender/build_ikon3d.py -- --root "$R" --ilustrasi --sampel 160
+"$B" -b -noaudio -P blender/build_showreel.py -- --root "$R" --sampel 40           # ± 1 jam
+"$B" -b -noaudio -P blender/build_usecase.py -- --root "$R" --sampel 32
+"$B" -b -noaudio -P blender/build_video.py -- --root "$R" --hanya hero,dekor,pola
+python tools/rakit_video.py semua
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\uji-e2e.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\cetak-poster.ps1
 
 # deploy
 npx firebase-tools deploy --only database,hosting --project telecare-id

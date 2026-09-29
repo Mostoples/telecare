@@ -62,14 +62,14 @@
 
   /* ---------------- SPESIALISASI ---------------- */
   const SPECIALTIES = [
-    { id: 'umum',    name: 'Dokter Umum',   emoji: '🩺', color: '#EDF9F2', fg: '#03804C' },
-    { id: 'jantung', name: 'Jantung',       emoji: '❤️', color: '#FFF3F1', fg: '#E2543F' },
-    { id: 'penyakit-dalam', name: 'Penyakit Dalam', emoji: '🫀', color: '#EFF8FD', fg: '#075A85' },
-    { id: 'psikolog', name: 'Psikolog',     emoji: '🧠', color: '#F3F1FE', fg: '#4A3BB8' },
-    { id: 'gizi',    name: 'Gizi Klinik',   emoji: '🥗', color: '#EDF9F2', fg: '#03804C' },
-    { id: 'saraf',   name: 'Saraf',         emoji: '🧬', color: '#EFF8FD', fg: '#075A85' },
-    { id: 'paru',    name: 'Paru',          emoji: '🫁', color: '#FFF9EC', fg: '#8A5D00' },
-    { id: 'geriatri', name: 'Geriatri',     emoji: '🧓', color: '#F3F1FE', fg: '#4A3BB8' }
+    { id: 'umum',    name: 'Dokter Umum',   ic: 'stetho', i3d: 'stetoskop', emoji: '🩺', color: '#EDF9F2', fg: '#03804C' },
+    { id: 'jantung', name: 'Jantung',       ic: 'heart', i3d: 'jantung', emoji: '❤️', color: '#FFF3F1', fg: '#E2543F' },
+    { id: 'penyakit-dalam', name: 'Penyakit Dalam', ic: 'pill', i3d: 'ekg', emoji: '🫀', color: '#EFF8FD', fg: '#075A85' },
+    { id: 'psikolog', name: 'Psikolog',     ic: 'brain', i3d: 'stres', emoji: '🧠', color: '#F3F1FE', fg: '#4A3BB8' },
+    { id: 'gizi',    name: 'Gizi Klinik',   ic: 'food', i3d: 'makan', emoji: '🥗', color: '#EDF9F2', fg: '#03804C' },
+    { id: 'saraf',   name: 'Saraf',         ic: 'ecg', i3d: 'perisai', emoji: '🧬', color: '#EFF8FD', fg: '#075A85' },
+    { id: 'paru',    name: 'Paru',          ic: 'spo2', i3d: 'oksigen', emoji: '🫁', color: '#FFF9EC', fg: '#8A5D00' },
+    { id: 'geriatri', name: 'Geriatri',     ic: 'elder', i3d: 'pengguna', emoji: '🧓', color: '#F3F1FE', fg: '#4A3BB8' }
   ];
 
   /* ---------------- DOKTER MITRA (contoh) ---------------- */
@@ -322,7 +322,7 @@
     facility: (id) => FACILITIES.find((f) => f.id === id) || FACILITIES[0],
     patient: (id) => PATIENTS.find((p) => p.id === id) || null,
     doctor: (id) => DOCTORS.find((d) => d.id === id) || null,
-    spec: (id) => SPECIALTIES.find((s) => s.id === id) || { name: id, emoji: '🩺', color: '#EDF9F2', fg: '#03804C' },
+    spec: (id) => SPECIALTIES.find((s) => s.id === id) || { name: id, ic: 'stetho', i3d: 'stetoskop', emoji: '🩺', color: '#EDF9F2', fg: '#03804C' },
     food: (n) => FOODS.find((f) => f.n === n) || null,
     goal: (id) => GOALS.find((g) => g.id === id) || GOALS[0],
     deviceType: (t) => DEVICE_TYPES.find((d) => d.type === t) || DEVICE_TYPES[0]

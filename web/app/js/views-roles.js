@@ -558,16 +558,14 @@
 
       <div class="section-title">${icon('sparkle')} Kelola unit</div>
       <div class="quick">
-        <a href="#/faskes/anggota"><i style="background:#EDF9F2;color:#03804C">${icon('users')}</i>Anggota</a>
-        <a href="#/faskes/perangkat"><i style="background:#DCEEF9;color:#075A85">${icon('watch')}</i>Perangkat</a>
-        <a href="#/faskes/nakes"><i style="background:#EEEBFD;color:#4A3BB8">${icon('stetho')}</i>Nakes</a>
-        <a href="#/notifikasi"><i style="background:#FFF1D6;color:#8A5D00">${icon('bell')}</i>Peringatan</a>
+        <a href="#/faskes/anggota"><i class="tile3d">${TC.i3d('pengguna')}</i>Anggota</a>
+        <a href="#/faskes/perangkat"><i class="tile3d">${TC.i3d('jam')}</i>Perangkat</a>
+        <a href="#/faskes/nakes"><i class="tile3d">${TC.i3d('stetoskop')}</i>Nakes</a>
+        <a href="#/notifikasi"><i class="tile3d">${TC.i3d('lonceng')}</i>Peringatan</a>
       </div>
 
       <div class="promo mt2">
-        <svg class="promo__deco" viewBox="0 0 200 200" fill="none" aria-hidden="true">
-          <circle cx="100" cy="100" r="86" stroke="#fff" stroke-width="2"/>
-          <circle cx="100" cy="100" r="58" stroke="#fff" stroke-width="2" stroke-dasharray="4 8"/></svg>
+        ${TC.ilus3d('analisis', 'promo__art')}
         <h3>Laporan berkala unit</h3>
         <p>Rekap bulanan kondisi anggota, kepatuhan pemakaian perangkat, dan jumlah eskalasi
            dapat diunduh untuk kebutuhan pelaporan internal.</p>
@@ -839,10 +837,10 @@
 
       <div class="section-title">${icon('sparkle')} Kelola</div>
       <div class="quick">
-        <a href="#/sistem/pengguna"><i style="background:#EDF9F2;color:#03804C">${icon('users')}</i>Pengguna</a>
-        <a href="#/sistem/dokter"><i style="background:#DCEEF9;color:#075A85">${icon('stetho')}</i>Dokter</a>
-        <a href="#/sistem/faskes"><i style="background:#EEEBFD;color:#4A3BB8">${icon('building')}</i>Faskes</a>
-        <a href="#/sistem/kalibrasi"><i style="background:#E8F4FF;color:#0E7FB8">${icon('target')}</i>Kalibrasi</a>
+        <a href="#/sistem/pengguna"><i class="tile3d">${TC.i3d('pengguna')}</i>Pengguna</a>
+        <a href="#/sistem/dokter"><i class="tile3d">${TC.i3d('stetoskop')}</i>Dokter</a>
+        <a href="#/sistem/faskes"><i class="tile3d">${TC.i3d('gedung')}</i>Faskes</a>
+        <a href="#/sistem/kalibrasi"><i class="tile3d">${TC.i3d('tujuan')}</i>Kalibrasi</a>
       </div>
 
       <div class="note note--w mt2">${icon('alert')}

@@ -1,0 +1,112 @@
+[
+  {
+    "nama": "tanaman",
+    "judul": "Optimized Potted Plants",
+    "uid": "967b4bf23fac4098993776fcfc2d3318",
+    "pembuat": "Nicholas-3D",
+    "profil": "https://sketchfab.com/Nicholas01",
+    "tautan": "https://sketchfab.com/3d-models/optimized-potted-plants-967b4bf23fac4098993776fcfc2d3318",
+    "lisensi": "CC BY 4.0 (wajib atribusi)",
+    "lisensi_slug": "by",
+    "berkas": "build/sketchfab/tanaman.glb"
+  },
+  {
+    "nama": "kursi",
+    "judul": "Armchair",
+    "uid": "675cc978e5d74bcea7ef28d13a63a3da",
+    "pembuat": "Elbolillo",
+    "profil": "https://sketchfab.com/Elbolilloduro",
+    "tautan": "https://sketchfab.com/3d-models/armchair-675cc978e5d74bcea7ef28d13a63a3da",
+    "lisensi": "CC BY 4.0 (wajib atribusi)",
+    "lisensi_slug": "by",
+    "berkas": "build/sketchfab/kursi.glb"
+  },
+  {
+    "nama": "mug",
+    "judul": "Coffee Mug (School Project)",
+    "uid": "5f5ccee1514c440887c072fae8e0d699",
+    "pembuat": "Ole Gunnar Isager",
+    "profil": "https://sketchfab.com/FrenchBaguette",
+    "tautan": "https://sketchfab.com/3d-models/coffee-mug-school-project-5f5ccee1514c440887c072fae8e0d699",
+    "lisensi": "CC BY 4.0 (wajib atribusi)",
+    "lisensi_slug": "by",
+    "berkas": "build/sketchfab/mug.glb"
+  },
+  {
+    "nama": "lampu",
+    "judul": "Table Lamp 01",
+    "uid": "6c395859886f405fb065b31b3e41d680",
+    "pembuat": "Nick Havas",
+    "profil": "https://sketchfab.com/nickhavas",
+    "tautan": "https://sketchfab.com/3d-models/table-lamp-01-6c395859886f405fb065b31b3e41d680",
+    "lisensi": "CC BY 4.0 (wajib atribusi)",
+    "lisensi_slug": "by",
+    "berkas": "build/sketchfab/lampu.glb"
+  },
+  {
+    "nama": "meja",
+    "judul": "Desk Low-Poly",
+    "uid": "ed62a64f51bf4d80a13e1344093c3909",
+    "pembuat": "Pedro Belthori",
+    "profil": "https://sketchfab.com/pedrobelthori",
+    "tautan": "https://sketchfab.com/3d-models/desk-low-poly-ed62a64f51bf4d80a13e1344093c3909",
+    "lisensi": "CC BY 4.0 (wajib atribusi)",
+    "lisensi_slug": "by",
+    "berkas": "build/sketchfab/meja.glb"
+  },
+  {
+    "nama": "ranjang",
+    "judul": "Bed 06",
+    "uid": "30a491ca2dab4b61adc04bd51d3f45c1",
+    "pembuat": "Doaa Sheha",
+    "profil": "https://sketchfab.com/DoaaSheha",
+    "tautan": "https://sketchfab.com/3d-models/bed-06-30a491ca2dab4b61adc04bd51d3f45c1",
+    "lisensi": "CC BY 4.0 (wajib atribusi)",
+    "lisensi_slug": "by",
+    "berkas": "build/sketchfab/ranjang.glb"
+  },
+  {
+    "nama": "tangan",
+    "judul": "Woman hands low-poly quads with UV",
+    "uid": "b094444fe51147dcab204ed10fc8e72c",
+    "pembuat": "blendffnike",
+    "profil": "https://sketchfab.com/blendffnike",
+    "tautan": "https://sketchfab.com/3d-models/woman-hands-low-poly-quads-with-uv-b094444fe51147dcab204ed10fc8e72c",
+    "lisensi": "CC BY 4.0 (wajib atribusi)",
+    "lisensi_slug": "by",
+    "berkas": "build/sketchfab/tangan.glb"
+  },
+  {
+    "nama": "roti",
+    "judul": "Sandwich (hand-painted)",
+    "uid": "abbc30337667479b9897139d795c6018",
+    "pembuat": "adamaysils",
+    "profil": "https://sketchfab.com/adamaysils",
+    "tautan": "https://sketchfab.com/3d-models/sandwich-hand-painted-abbc30337667479b9897139d795c6018",
+    "lisensi": "CC BY 4.0 (wajib atribusi)",
+    "lisensi_slug": "by",
+    "berkas": "build/sketchfab/roti.glb"
+  },
+  {
+    "nama": "sendok",
+    "judul": "Silverware (Spoon, Fork, Knife)",
+    "uid": "76a43250dd694d2fa1e109124d75b6ad",
+    "pembuat": "Fridge",
+    "profil": "https://sketchfab.com/youssefdarwish01",
+    "tautan": "https://sketchfab.com/3d-models/silverware-spoon-fork-knife-76a43250dd694d2fa1e109124d75b6ad",
+    "lisensi": "CC BY 4.0 (wajib atribusi)",
+    "lisensi_slug": "by",
+    "berkas": "build/sketchfab/sendok.glb"
+  },
+  {
+    "nama": "mejamakan",
+    "judul": "Industrial Table",
+    "uid": "5f94fb035fa74f43abda3ada8f0a719e",
+    "pembuat": "Elasta Kristya",
+    "profil": "https://sketchfab.com/luca3d",
+    "tautan": "https://sketchfab.com/3d-models/industrial-table-5f94fb035fa74f43abda3ada8f0a719e",
+    "lisensi": "CC BY 4.0 (wajib atribusi)",
+    "lisensi_slug": "by",
+    "berkas": "build/sketchfab/mejamakan.glb"
+  }
+]

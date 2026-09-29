@@ -7,8 +7,12 @@ perilakunya menyerupai Firebase Hosting.
 """
 import functools
 import http.server
+import os
 import socketserver
 import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HASIL_UJI = os.path.join(ROOT, 'build', 'e2e-hasil.json')
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -33,6 +37,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
             self.send_header('Service-Worker-Allowed', '/app/')
         super().end_headers()
+
+    def do_POST(self):
+        """Titik laporan uji e2e: tests/e2e.js mengirim hasilnya ke sini.
+
+        Server hanya mengikat 127.0.0.1, dan berkasnya ditulis ke build/ yang
+        tidak dilacak Git, jadi ini tidak pernah terbawa ke Hosting.
+        """
+        if self.path != '/__hasil-uji':
+            self.send_error(404)
+            return
+        n = int(self.headers.get('Content-Length') or 0)
+        data = self.rfile.read(min(n, 2_000_000))
+        os.makedirs(os.path.dirname(HASIL_UJI), exist_ok=True)
+        with open(HASIL_UJI, 'wb') as f:
+            f.write(data)
+        self.send_response(204)
+        self.end_headers()
 
     def log_message(self, fmt, *args):
         sys.stderr.write('%s - %s\n' % (self.address_string(), fmt % args))

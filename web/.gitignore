@@ -20,3 +20,6 @@ Desktop.ini
 .env
 .env.*
 *.local
+
+# Cache bytecode Python dari skrip Blender
+__pycache__/
