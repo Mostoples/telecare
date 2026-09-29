@@ -83,3 +83,24 @@ Keduanya berlisensi [SIL Open Font License 1.1](docs/LISENSI_FONT.md).
 `ukur` (sama dengan BOOT) · `status` · `daftar` (hasil tersimpan) · `hapus` ·
 `id <1-99>` (nomor unit, nama BLE `TeleCare-NN`) · `glu <±N>` · `td <±S> <±D>`
 (offset kalibrasi)
+
+## Sisi web — `web/`
+
+Repositori ini juga memuat **aplikasi web dan situs penelitian TeleCare** di
+[`web/`](web/) — sisi lain dari sistem yang sama. Firmware di akar mengukur dan
+mengirim hasilnya lewat BLE; aplikasi di `web/` menerima, menyimpan riwayatnya,
+dan menghubungkan pengguna ke tenaga kesehatan.
+
+| Bagian | Isi |
+| --- | --- |
+| [`web/index.html`](web/index.html) | situs profil penelitian (landing page) |
+| [`web/app/`](web/app/) | aplikasi TeleCare: pemantauan vital, sesi makan, telemedisin |
+
+Aplikasi web ditulis dengan HTML, CSS, dan JavaScript native — tanpa framework
+dan tanpa langkah build. Chat konsultasi berjalan di Firebase Realtime Database,
+panggilan suara/video memakai WebRTC. Empat peran tersedia: pasien, dokter,
+admin faskes, dan admin platform.
+
+Cara menjalankan, membangun ulang aset, dan men-deploy ada di
+[`web/README.md`](web/README.md). Catatan progres dan keputusan teknis ada di
+[`web/MEMORY.md`](web/MEMORY.md).

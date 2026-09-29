@@ -5,7 +5,7 @@ selesai** — supaya siapa pun (termasuk sesi kerja berikutnya) bisa melanjutkan
 menebak-nebak. Untuk cara memakai dan menjalankan proyek, lihat [README.md](README.md);
 berkas ini khusus soal *progres* dan *alasan di balik keputusan*.
 
-**Diperbarui:** 11 September 2026
+**Diperbarui:** 29 September 2026
 
 ---
 
@@ -22,7 +22,8 @@ berkas ini khusus soal *progres* dan *alasan di balik keputusan*.
 | **Aplikasi** | https://telecare-id.web.app/app/ |
 | **Ukuran** | ± 13.500 baris (HTML/CSS/JS/Python) |
 | **Versi kontrol** | ✅ Git aktif, branch `main` |
-| **Repositori** | https://github.com/Mostoples/telecare (publik) |
+| **Repositori** | https://github.com/HamzGenk/TeleCare (publik) — sisi web ada di `web/` |
+| **Repositori lama** | https://github.com/Mostoples/telecare — arsip, tidak lagi dipakai |
 
 ### Tautan demo cepat
 
@@ -141,6 +142,13 @@ Urut dari yang paling awal.
    total 59 MB). Konfigurasi Firebase web ikut terlihat — itu memang bukan rahasia,
    keamanannya bertumpu pada aturan database yang sudah diperketat (lihat §4).
 
+17. **Pindah ke repositori gabungan.** Sisi web digabungkan ke
+   https://github.com/HamzGenk/TeleCare sebagai subfolder `web/`, menyatu dengan firmware
+   ESP32-C6 milik HamzGenk yang sudah lebih dulu ada di akar. Penggabungan memakai
+   `git subtree add --prefix=web`, sehingga seluruh riwayat commit sisi web ikut terbawa
+   (21 commit: 1 firmware + 19 web + 1 merge). Firmware diverifikasi identik dengan aslinya —
+   `git diff 9809bd8 HEAD -- . ':(exclude)web'` kosong.
+
 ## 4. Keputusan teknis & alasannya
 
 Bagian ini yang paling mudah terlupa, jadi ditulis lengkap.
@@ -173,6 +181,15 @@ Tanpa ini, balasan bot akan bertabrakan dengan jawaban dokter sungguhan.
 
 **Mode demo mempercepat waktu.** Sesi makan 2 jam dipadatkan jadi ± 2 menit (`settings.fastDemo`),
 supaya alur empat titik pengukuran bisa dicoba utuh. Bisa dimatikan di Pengaturan.
+
+**Satu repositori untuk dua sisi sistem.** Firmware dan aplikasi web tinggal di repositori
+yang sama karena keduanya memang satu produk yang berbicara lewat BLE — protokolnya
+(`tc_proto.h` di firmware, parser GATT di `app/js/ble.js`) harus berubah bersamaan, dan
+memisahkannya membuat perubahan protokol rawan tidak sinkron. Web ditaruh di subfolder
+`web/`, **bukan menimpa akar**, supaya pekerjaan firmware yang sudah ada tetap utuh.
+`git subtree` dipilih ketimbang menyalin berkas mentah agar riwayat commit tidak hilang.
+Konsekuensinya: perintah Firebase (`firebase deploy`) dijalankan dari dalam `web/`, sebab
+`firebase.json` memakai `"public": "."` yang relatif terhadap letak berkasnya sendiri.
 
 **Peran disimpan di `user.role`.** Rute dijaga lewat `opts.roles`; yang tidak berhak
 dialihkan ke beranda perannya sendiri. Tab bar dan sidebar dibangun dari `TABS_BY_ROLE`.
