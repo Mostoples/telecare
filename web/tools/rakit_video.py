@@ -347,9 +347,29 @@ def usecase():
             jenis=["fade", "fade", "fade", "fadewhite"])
 
 
+
+# Showreel aplikasi (blender/build_showreel_app.py): mockup Android, UI TeleCare bergerak.
+APLIKASI = [
+    ("ap-buka", "", "Aplikasi TeleCare", "Pantau kesehatan dan hubungi dokter dari satu aplikasi.", "tengah-bawah"),
+    ("ap-beranda", "Beranda", "Semua vital, sekilas.", "Detak jantung, SpO₂, suhu, tekanan darah, dan EKG langsung dari perangkat.", "kiri-bawah"),
+    ("ap-vital", "Detail vital", "Satu ketukan ke riwayat lengkap.", "Tren 60 pembacaan terakhir dengan rentang acuan.", "kiri-bawah"),
+    ("ap-konsultasi", "Telemedisin", "Pilih dokter, mulai chat.", "Dokter umum, spesialis, dan psikolog — data vital ikut terlampir.", "kiri-bawah"),
+    ("ap-panggilan", "Video call", "Bertatap muka tanpa antre.", "Panggilan WebRTC langsung dari aplikasi.", "kiri-bawah"),
+    ("ap-perangkat", "Perangkat", "TeleBand & TeleRing tersambung.", "Pasangkan lewat Bluetooth, sinkron otomatis.", "kiri-bawah"),
+    ("ap-peran", "Empat peran", "Pasien · dokter · faskes · admin.", "Satu aplikasi, layar yang disesuaikan untuk tiap tugas.", "kiri-atas"),
+    ("ap-tutup", "Coba sekarang", "telecare-id.web.app", "Masuk sebagai tamu — tanpa daftar.", "kiri-bawah"),
+]
+
+
+def aplikasi():
+    klips = [klip_shot(*s, opak=True) for s in APLIKASI]
+    sambung(klips, os.path.join(KELUAR, "telecare-aplikasi.mp4"), 0.6,
+            jenis=["fadewhite", "smoothleft", "fade", "smoothleft", "fade", "smoothleft", "fade"])
+
 def main():
     pilih = sys.argv[1] if len(sys.argv) > 1 else "semua"
-    for nama, fn in (("hero", hero), ("showreel", showreel), ("promo", promo), ("usecase", usecase)):
+    for nama, fn in (("hero", hero), ("showreel", showreel), ("promo", promo), ("usecase", usecase),
+                     ("aplikasi", aplikasi)):
         if pilih in (nama, "semua"):
             print("==", nama)
             fn()

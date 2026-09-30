@@ -117,8 +117,10 @@ def jari_rileks(rig, lengkung=26):
         bend(rig, "finger1-2.%s" % s, 12)
 
 
-def pose_lihat_jam(rig, t=1.0):
-    """Berdiri santai, lengan kiri terangkat melihat TeleBand. t=0 lengan turun, t=1 terangkat."""
+def pose_lihat_jam(rig, t=1.0, lihat=None):
+    """Berdiri santai, lengan kiri terangkat melihat TeleBand. t=0 lengan turun, t=1 terangkat.
+    `lihat` = seberapa kepala menunduk ke jam (bawaan = t)."""
+    lihat = t if lihat is None else lihat
     nol(rig)
     jari_rileks(rig)
     # lengan kanan santai di samping
@@ -129,10 +131,12 @@ def pose_lihat_jam(rig, t=1.0):
     la0, la1 = Vector((0.08, -0.12, -1.0)), Vector((-0.55, -0.75, 0.35))
     aim(rig, "upperarm01.L", ua0.lerp(ua1, t))
     aim(rig, "lowerarm01.L", la0.lerp(la1, t))
+    # pergelangan diputar agar layar menghadap wajah
+    bend(rig, "lowerarm02.L", -28 * t, "Y")
     # kepala menunduk ke pergelangan
-    bend(rig, "neck01", 10 * t)
-    bend(rig, "head", 14 * t)
-    bend(rig, "head", -10 * t, "Z")
+    bend(rig, "neck01", 10 * lihat)
+    bend(rig, "head", 14 * lihat)
+    bend(rig, "head", -10 * lihat, "Z")
     bpy.context.view_layer.update()
 
 
@@ -254,6 +258,7 @@ def bangun_band(matriks, rx=0.030, rz=0.024, lebar=0.022, skala=1.0):
     induk = bpy.data.objects.new("TeleBand_pergelangan", None)
     bpy.context.collection.objects.link(induk)
     induk.matrix_world = matriks @ Matrix.Scale(skala, 4)
+    induk["rz"] = rz
 
     # tali: elips tertutup diekstrusi sepanjang Y, sedikit menebal
     bm = bmesh.new()
@@ -310,3 +315,78 @@ def bangun_band(matriks, rx=0.030, rz=0.024, lebar=0.022, skala=1.0):
     led.parent = induk
     led.location = (0, 0, -rz - 0.001)
     return induk
+
+
+# ------------------------------------------------------------
+#  gerak hidup (ditumpuk di atas pose dasar, per frame)
+# ------------------------------------------------------------
+def _gel(d, *komponen):
+    """Jumlah gelombang sinus: komponen = (amplitudo, periode_detik, fase)."""
+    return sum(a * math.sin(2 * math.pi * d / T + f) for a, T, f in komponen)
+
+
+def _kedip(d, jadwal=(1.2, 4.5, 7.9, 10.6), durasi=0.2):
+    k = 0.0
+    for t0 in jadwal:
+        u = (d - t0) / durasi
+        if 0 <= u <= 1:
+            k = max(k, math.sin(math.pi * u))
+    return k
+
+
+def hidup(rig, d, kuat=1.0, kedip=True):
+    """Napas, pergeseran berat badan, mikro-gerak kepala & mata, kedip.
+    d = waktu dalam detik. Dipanggil SETELAH pose dasar tiap frame."""
+    napas = math.sin(2 * math.pi * d / 4.2)
+    bend(rig, "spine03", 1.5 * napas * kuat)
+    bend(rig, "spine02", 0.9 * napas * kuat)
+    bend(rig, "neck01", -0.9 * napas * kuat)
+    for s in ("L", "R"):
+        bend(rig, "clavicle." + s, 1.1 * napas * kuat, "Z" if s == "L" else "X")
+    # berat badan bergeser pelan kiri-kanan
+    bend(rig, "spine05", _gel(d, (1.3, 6.8, 0.0)) * kuat, "Z")
+    bend(rig, "spine04", _gel(d, (0.8, 6.8, 0.6)) * kuat, "Y")
+    # kepala: gabungan beberapa gelombang lambat supaya tidak terlihat mekanis
+    bend(rig, "head", _gel(d, (1.6, 5.3, 0.0), (0.7, 2.3, 1.1)) * kuat, "Z")
+    bend(rig, "head", _gel(d, (1.1, 3.9, 0.4), (0.4, 1.7, 2.0)) * kuat, "X")
+    # mata melirik kecil
+    for s in ("L", "R"):
+        bend(rig, "eye." + s, _gel(d, (2.5, 3.1, 0.3)), "Z")
+    if kedip:
+        k = _kedip(d)
+        for s in ("L", "R"):
+            bend(rig, "orbicularis03." + s, -34 * k)
+    bpy.context.view_layer.update()
+
+
+def mengetik(rig, d, lirik=0.0):
+    """Tangan mengetik bergantian + sesekali melirik (lirik 0..1, ke kanan)."""
+    for s, fase in (("L", 0.0), ("R", 1.7)):
+        naik = max(0.0, math.sin(2 * math.pi * d * 2.3 + fase))
+        bend(rig, "lowerarm01." + s, 2.2 * naik)
+        bend(rig, "wrist." + s, -3.0 * naik)
+        for f in range(2, 6):
+            ketuk = max(0.0, math.sin(2 * math.pi * d * 3.4 + f * 1.3 + fase))
+            bend(rig, "finger%d-1.%s" % (f, s), 14 * ketuk)
+    bend(rig, "head", -16 * lirik, "Z")
+    bend(rig, "head", 6 * lirik)
+    bpy.context.view_layer.update()
+
+
+def mengangguk(rig, d, jendela=((1.0, 2.4), (3.3, 4.2))):
+    """Anggukan kecil saat mendengarkan dokter + gestur tangan kanan."""
+    for a, b in jendela:
+        if a <= d <= b:
+            u = (d - a) / (b - a)
+            bend(rig, "neck02", 6 * math.sin(math.pi * u) * abs(math.sin(2 * math.pi * d * 1.4)))
+    g = max(0.0, math.sin(math.pi * min(1.0, max(0.0, (d - 2.0) / 1.6))))
+    bend(rig, "lowerarm01.R", -14 * g)
+    bend(rig, "wrist.R", 10 * g, "Y")
+    bpy.context.view_layer.update()
+
+
+def titik_layar(band):
+    """Posisi dunia pusat layar TeleBand — dipakai sebagai titik fokus kamera."""
+    bpy.context.view_layer.update()
+    rz = band.get("rz", 0.024)
+    return band.matrix_world @ Vector((0, 0, rz + 0.0123))

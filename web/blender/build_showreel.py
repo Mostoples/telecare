@@ -190,6 +190,8 @@ def kamar(r):
 
 
 def sh_pagi(sc, cam):
+    """Berdiri di samping ranjang: diam bernapas → mengangkat pergelangan → membaca TeleBand
+    (fokus berpindah dari wajah ke layar jam) → kepala kembali terangkat."""
     r = BV.akar("pagi")
     kamar(r)
     rig, badan = MN.buat_manusia(pakaian="male_casualsuit04", warna_baju="#E8EEEC")
@@ -197,37 +199,51 @@ def sh_pagi(sc, cam):
     rig.rotation_euler = (0, 0, math.radians(-20))
     MN.pose_lihat_jam(rig, 0.0)
     band = MN.jam_pergelangan(rig, "L", 0.93)
+    cam.data.dof.aperture_fstop = 2.4
 
     def perbarui(t, i):
-        angkat = mulus(max(0.0, min(1.0, (t - 0.18) / 0.4)))
-        MN.pose_lihat_jam(rig, angkat)
+        d = i / BV.FPS
+        angkat = mulus(max(0.0, min(1.0, (d - 0.9) / 1.5)))
+        lihat = angkat * (1 - 0.55 * mulus(max(0.0, min(1.0, (d - 4.1) / 0.7))))
+        MN.pose_lihat_jam(rig, angkat, lihat)
+        MN.hidup(rig, d)
         e = mulus(t)
-        pos, _ = MN.titik_tulang(rig, "lowerarm02.L", 0.9)
+        dari = Vector((1.7 - 0.5 * e, -1.9 + 0.7 * e, 1.45 - 0.05 * e))
         kepala, _ = MN.titik_tulang(rig, "head", 0.5)
-        tuju = kepala.lerp(pos, 0.35 + 0.4 * angkat)
+        layar = MN.titik_layar(band)
+        tuju = kepala.lerp(layar, 0.35 + 0.4 * angkat)
+        fokus = kepala.lerp(layar, mulus(max(0.0, min(1.0, (d - 2.0) / 0.8))) * (1 - 0.6 * mulus(max(0.0, min(1.0, (d - 4.2) / 0.6)))))
         cam.data.lens = 40 + 18 * e
-        arahkan(cam, (1.7 - 0.5 * e, -1.9 + 0.7 * e, 1.45 - 0.05 * e), tuju,
-                (tuju - Vector((1.7 - 0.5 * e, -1.9 + 0.7 * e, 1.45))).length)
+        arahkan(cam, dari, tuju, (fokus - dari).length)
     return 120, perbarui
 
 
 def sh_pergelangan(sc, cam):
+    """Makro TeleBand: pergelangan bergerak halus (napas, sedikit memutar), fokus TERKUNCI
+    ke layar jam setiap frame sehingga layar selalu tajam."""
     r = BV.akar("pergelangan")
     kamar(r)
     rig, badan = MN.buat_manusia(pakaian="male_casualsuit04", warna_baju="#E8EEEC")
     rig.location = (0.05, 0.9, 0)
     rig.rotation_euler = (0, 0, math.radians(-20))
     MN.pose_lihat_jam(rig, 1.0)
-    MN.jam_pergelangan(rig, "L", 0.93)
-    pos, arah = MN.titik_tulang(rig, "lowerarm02.L", 0.93)
-    cam.data.dof.aperture_fstop = 1.6
+    band = MN.jam_pergelangan(rig, "L", 0.93)
+    cam.data.dof.aperture_fstop = 2.8
     cam.data.lens = 85
+    MN.pose_lihat_jam(rig, 1.0)
+    pusat0 = MN.titik_layar(band)
 
     def perbarui(t, i):
+        d = i / BV.FPS
+        MN.pose_lihat_jam(rig, 1.0)
+        MN.bend(rig, "lowerarm02.L", 7 * math.sin(2 * math.pi * d / 3.2), "Y")   # memutar pergelangan pelan
+        MN.bend(rig, "wrist.L", 4 * math.sin(2 * math.pi * d / 2.6 + 0.8))
+        MN.hidup(rig, d, kuat=0.7)
+        layar = MN.titik_layar(band)
         e = mulus(t)
         a = math.radians(-60 + 55 * e)
-        dari = pos + Vector((0.42 * math.cos(a), 0.42 * math.sin(a) - 0.1, 0.16 - 0.04 * e))
-        arahkan(cam, dari, pos + Vector((0, 0, 0.02)))
+        dari = pusat0 + Vector((0.40 * math.cos(a), 0.40 * math.sin(a) - 0.1, 0.17 - 0.04 * e))
+        arahkan(cam, dari, layar, (layar - dari).length)
     return 96, perbarui
 
 
@@ -251,6 +267,7 @@ def sh_aplikasi(sc, cam):
 
 
 def sh_kerja(sc, cam):
+    """Duduk mengetik; di tengah shot melirik ke ponsel (peringatan stres)."""
     r = BV.akar("kerja")
     meja, _ = BU.impor("meja", 0.76, (0, 0.8, 0), math.radians(90), buang=["Cell_phone"], campur=0.5)
     atas = BU.puncak(meja, "Paper") or 0.76
@@ -258,25 +275,32 @@ def sh_kerja(sc, cam):
     rig, badan = MN.buat_manusia(pakaian="male_casualsuit04", warna_baju="#DCE6EA")
     rig.rotation_euler = (0, 0, math.radians(180))       # menghadap meja (+Y)
     MN.pose_duduk_meja(rig)
-    MN.jam_pergelangan(rig, "L", 0.93)
+    band = MN.jam_pergelangan(rig, "L", 0.93)
     bpy.context.view_layer.update()
     rig.location.z += 0.50 - tinggi_panggul(rig)
     rig.location.y = 0.05
-    # kursi sederhana (dudukan porselen)
     duduk = BI.kotak((0.46, 0.44, 0.06), 0.02, 3)
     BI.pakai(duduk, BU.mat_warna("kursi", "#F2F4F3", 0.5))
     duduk.location = (0, 0.02, 0.44)
     kaki = BI.silinder(0.03, 0.44, 0, 24)
     BI.pakai(kaki, BU.mat_warna("kaki", "#B9C1C3", 0.3))
     kaki.location = (0, 0.02, 0.22)
-    cam.data.dof.aperture_fstop = 2.4
+    cam.data.dof.aperture_fstop = 2.8
 
     def perbarui(t, i):
+        d = i / BV.FPS
+        lirik = mulus(max(0.0, min(1.0, (d - 1.9) / 0.5))) * (1 - mulus(max(0.0, min(1.0, (d - 3.6) / 0.5))))
+        MN.pose_duduk_meja(rig)
+        MN.mengetik(rig, d * (1 - 0.8 * lirik), lirik)
+        MN.hidup(rig, d, kuat=0.8)
         e = mulus(t)
         cam.data.lens = 35 + 8 * e
         kepala, _ = MN.titik_tulang(rig, "head", 0.3)
-        tuju = kepala.lerp(Vector((0.42, 0.62, atas)), 0.55)
-        arahkan(cam, (1.55 - 0.35 * e, -0.9 + 0.35 * e, 1.35), tuju)
+        hp = Vector((0.42, 0.62, atas))
+        tuju = kepala.lerp(hp, 0.55)
+        dari = Vector((1.55 - 0.35 * e, -0.9 + 0.35 * e, 1.35))
+        fokus = kepala.lerp(hp, 0.3 + 0.5 * lirik)
+        arahkan(cam, dari, tuju, (fokus - dari).length)
     return 108, perbarui
 
 
@@ -311,11 +335,11 @@ def sh_sistem(sc, cam):
 
 
 def sh_konsultasi(sc, cam):
+    """Duduk di kursi, video call di ponsel; mengangguk dan bergestur mendengarkan dokter."""
     r = BV.akar("konsultasi")
     BU.impor("kursi", 0.9, (0, 1.0, 0), 0.0, ambil=["Armchair_07_"])
     BU.impor("tanaman", 1.3, (-1.1, 1.6, 0), ambil=["Pot_4_"])
     BU.meja_nakas(r, (0.0, 0.25), 0.5)
-    # ponsel berdiri di penyangga di atas meja kecil, menampilkan panggilan video
     ph, layar = BV.ponsel_ui(r, ui("pasien-call"), (0.0, 0.2, 0.5 + 0.09), (math.radians(-12), 0, math.radians(180)),
                              BU.S_PONSEL)
     rig, badan = MN.buat_manusia(pakaian="male_casualsuit04", warna_baju="#E8EEEC")
@@ -324,13 +348,18 @@ def sh_konsultasi(sc, cam):
     bpy.context.view_layer.update()
     rig.location = (0, 0.95, 0)
     rig.location.z += 0.48 - tinggi_panggul(rig)
-    cam.data.dof.aperture_fstop = 1.8
+    cam.data.dof.aperture_fstop = 2.2
     cam.data.lens = 50
 
     def perbarui(t, i):
+        d = i / BV.FPS
+        MN.pose_duduk_meja(rig)
+        MN.mengangguk(rig, d)
+        MN.hidup(rig, d, kuat=0.9)
         e = mulus(t)
         tuju = Vector((0.0, 0.2, 0.6))
-        arahkan(cam, (0.45 - 0.08 * e, 1.38 - 0.1 * e, 1.78 - 0.08 * e), tuju)
+        dari = Vector((0.45 - 0.08 * e, 1.38 - 0.1 * e, 1.78 - 0.08 * e))
+        arahkan(cam, dari, tuju, (tuju - dari).length)
         layar_menurut(layar, i, 60, "pasien-call", "pasien-chat")
     return 108, perbarui
 
