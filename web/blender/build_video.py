@@ -67,7 +67,7 @@ def studio(lebar, tinggi):
     sc.world = w
     w.use_nodes = True
     bg = w.node_tree.nodes.get("Background")
-    bg.inputs["Color"].default_value = (0.84, 0.89, 0.87, 1)
+    bg.inputs["Color"].default_value = (0.83, 0.87, 0.93, 1) if BI.AKSEN == "biru" else (0.84, 0.89, 0.87, 1)
     bg.inputs["Strength"].default_value = 0.6
 
     def lampu(nama, loc, energi, ukuran, warna=(1, 1, 1)):

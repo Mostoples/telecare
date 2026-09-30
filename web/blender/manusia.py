@@ -352,6 +352,8 @@ def hidup(rig, d, kuat=1.0, kedip=True):
     # mata melirik kecil
     for s in ("L", "R"):
         bend(rig, "eye." + s, _gel(d, (2.5, 3.1, 0.3)), "Z")
+    # mulut tertutup rileks (pose netral MakeHuman membuat bibir sedikit terbuka)
+    bend(rig, "jaw", -6)
     if kedip:
         k = _kedip(d)
         for s in ("L", "R"):

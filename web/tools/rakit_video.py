@@ -30,7 +30,10 @@ SHOTS = os.path.join(AKAR, "build", "shots")
 FONT = os.path.join(AKAR, "build", "fonts")
 KELUAR = os.path.join(AKAR, "assets", "video")
 FPS = 24
-LATAR = "0xE9EFF3"
+# Tema video: biru (bawaan) atau hijau — env TELECARE_TEMA=hijau
+TEMA = os.environ.get("TELECARE_TEMA", "biru")
+LATAR = "0xE9EFF6" if TEMA == "biru" else "0xE9EFF3"
+LATAR_RGB = (233, 239, 246) if TEMA == "biru" else (233, 239, 243)
 W, H = 1920, 1080
 os.makedirs(KERJA, exist_ok=True)
 
@@ -184,7 +187,7 @@ def klip_layar(png, keluar, dur=3.6, ukuran_panel=1180, perangkat="desktop"):
         im = im.resize((round(im.width * tinggi / im.height), tinggi), Image.LANCZOS)
         r = 46
     pad = 18
-    kanvas = Image.new("RGBA", (W, H), (233, 239, 243, 255))
+    kanvas = Image.new("RGBA", (W, H), LATAR_RGB + (255,))
     x0, y0 = (W - im.width) // 2, (H - im.height) // 2
     # bayangan ganda neumorfik
     for dx, dy, warna in ((22, 22, (150, 170, 162, 150)), (-22, -22, (255, 255, 255, 240))):
@@ -193,7 +196,7 @@ def klip_layar(png, keluar, dur=3.6, ukuran_panel=1180, perangkat="desktop"):
                                              y0 + im.height + pad + dy], r + pad, fill=warna)
         kanvas.alpha_composite(b.filter(ImageFilter.GaussianBlur(26)))
     d = ImageDraw.Draw(kanvas)
-    d.rounded_rectangle([x0 - pad, y0 - pad, x0 + im.width + pad, y0 + im.height + pad], r + pad, fill=(233, 239, 243, 255))
+    d.rounded_rectangle([x0 - pad, y0 - pad, x0 + im.width + pad, y0 + im.height + pad], r + pad, fill=LATAR_RGB + (255,))
     topeng = Image.new("L", im.size, 0)
     ImageDraw.Draw(topeng).rounded_rectangle([0, 0, im.width, im.height], r, fill=255)
     kanvas.paste(im, (x0, y0), topeng)
@@ -252,9 +255,9 @@ def k(nama):
 def hero():
     mp4 = klip_render("hero", k("hero-1080.mp4"), True, (1080, 1080))
     ff("-i", mp4, "-vf", "scale=900:900:flags=lanczos,format=yuv420p", "-c:v", "libx264", "-preset", "slow",
-       "-crf", "22", "-an", "-movflags", "+faststart", os.path.join(KELUAR, "hero-loop.mp4"))
+       "-crf", "22", "-an", "-movflags", "+faststart", os.path.join(KELUAR, "hero-loop%s.mp4" % ("-biru" if TEMA == "biru" else "")))
     ff("-i", mp4, "-vf", "scale=900:900:flags=lanczos", "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", "36",
-       "-row-mt", "1", "-an", os.path.join(KELUAR, "hero-loop.webm"))
+       "-row-mt", "1", "-an", os.path.join(KELUAR, "hero-loop%s.webm" % ("-biru" if TEMA == "biru" else "")))
     print("  -> hero-loop.mp4/webm")
 
 

@@ -37,6 +37,15 @@
       if (v.indexOf('assets/3d/biru/') < 0 && /assets\/3d\/(ikon|ikon-anim|ilustrasi)\//.test(v))
         el.setAttribute(a, v.replace('assets/3d/', 'assets/3d/biru/'));
     });
+    // loop hero versi biru
+    var hero = document.getElementById('heroProduct');
+    if (hero) {
+      hero.querySelectorAll('source').forEach(function (so) {
+        so.setAttribute('src', so.getAttribute('src').replace('hero-loop.', 'hero-loop-biru.'));
+      });
+      if (hero.poster) hero.poster = hero.poster.replace('assets/3d/ilustrasi/', 'assets/3d/biru/ilustrasi/');
+      hero.load();
+    }
   });
 })();
 </script>

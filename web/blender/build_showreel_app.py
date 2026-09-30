@@ -67,12 +67,12 @@ def studio():
     sc.world = w
     w.use_nodes = True
     bg = w.node_tree.nodes.get("Background")
-    bg.inputs["Color"].default_value = BI.hx("#E4ECF1")
+    bg.inputs["Color"].default_value = BI.hx("#E3EAF4" if BI.AKSEN == "biru" else "#E4ECF1")
     bg.inputs["Strength"].default_value = 0.8
     BU.lampu("kunci", (-4.5, -5.0, 6.5), 1300, 6.0, (1.0, 0.98, 0.95), (0, 0.5, 1.2))
     BU.lampu("tepi", (5.0, 4.0, 4.5), 900, 5.0, (0.85, 0.97, 0.92), (0, 0.5, 1.2))
     BU.lampu("isi", (4.0, -6.0, 1.8), 350, 7.0, (1, 1, 1), (0, 0.5, 1.2))
-    cyclorama("#E9EFF3")
+    cyclorama("#E9EFF6" if BI.AKSEN == "biru" else "#E9EFF3")
     cd = bpy.data.cameras.new("kam")
     cd.lens = 50
     cd.dof.use_dof = True
