@@ -636,21 +636,27 @@
     const t = s.turn || {};
     TC.topbar('Pengaturan');
     setView(`
+      <div class="section-title">${icon('sparkle')} Tema</div>
+      <div class="pilih-tema" role="group" aria-label="Pilih tema warna">
+        <button type="button" data-tema="biru" aria-pressed="${TC.tema.kini() === 'biru'}">
+          <i style="background:linear-gradient(135deg,#4B92FF,#1646D6)"></i><span>Biru<small>bawaan</small></span></button>
+        <button type="button" data-tema="hijau" aria-pressed="${TC.tema.kini() === 'hijau'}">
+          <i style="background:linear-gradient(135deg,#3FD69D,#0B9A62)"></i><span>Hijau<small>Kemenkes</small></span></button>
+      </div>
+
       <div class="section-title">${icon('clock')} Mode purwarupa</div>
       <div class="list">
         <label class="row">
           <span class="row__ico">${icon('clock')}</span>
           <div style="min-width:0"><b>Percepat waktu sesi</b>
             <small>Rentang 2 jam dipadatkan menjadi ± 2 menit agar alur dapat dicoba utuh.</small></div>
-          <input type="checkbox" id="tFast" ${s.fastDemo ? 'checked' : ''}
-                 style="margin-left:auto;width:20px;height:20px;accent-color:var(--green-500)">
+          <input type="checkbox" id="tFast" ${s.fastDemo ? 'checked' : ''} style="margin-left:auto">
         </label>
         <label class="row">
           <span class="row__ico">${icon('bell')}</span>
           <div style="min-width:0"><b>Peringatan eskalasi</b>
             <small>Vital yang menembus ambang, peringatan perangkat, dan pengingat konsultasi.</small></div>
-          <input type="checkbox" id="tNotif" ${s.notif ? 'checked' : ''}
-                 style="margin-left:auto;width:20px;height:20px;accent-color:var(--green-500)">
+          <input type="checkbox" id="tNotif" ${s.notif ? 'checked' : ''} style="margin-left:auto">
         </label>
       </div>
 
@@ -723,6 +729,12 @@
         <button class="btn btn--dangerSoft btn--block mt" data-wipe>${icon('trash')} Hapus semua data lokal</button>
       </div>
     `);
+
+    $$('.pilih-tema [data-tema]').forEach((b) => b.addEventListener('click', () => {
+      TC.tema.pasang(b.dataset.tema);
+      $$('.pilih-tema [data-tema]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      toast('Tema ' + (b.dataset.tema === 'hijau' ? 'hijau' : 'biru') + ' dipakai.');
+    }));
 
     $('#tFast').onchange = (e) => {
       Store.update((st) => { st.settings.fastDemo = e.target.checked; });

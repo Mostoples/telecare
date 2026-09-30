@@ -36,8 +36,12 @@ def arg(nama, bawaan=None):
 
 
 ROOT = arg("--root", os.path.dirname(HERE))
-OUT_IKON = os.path.join(ROOT, "assets", "3d", "ikon")
-OUT_ILUS = os.path.join(ROOT, "assets", "3d", "ilustrasi")
+# --aksen biru: set warna biru (tema bawaan aplikasi) ke assets/3d/biru/...;
+# tanpa flag (hijau) tetap di assets/3d/... seperti sebelumnya.
+AKSEN = str(arg("--aksen", "hijau"))
+_BASIS3D = os.path.join(ROOT, "assets", "3d") if AKSEN == "hijau" else os.path.join(ROOT, "assets", "3d", AKSEN)
+OUT_IKON = os.path.join(_BASIS3D, "ikon")
+OUT_ILUS = os.path.join(_BASIS3D, "ilustrasi")
 SAMPEL = int(arg("--sampel", 96))
 HANYA = [x for x in str(arg("--hanya", "")).split(",") if x]
 for d in (OUT_IKON, OUT_ILUS):
@@ -107,6 +111,9 @@ AQ_MEREK = {"hijau", "hijau2", "mint", "biru", "biru2", "koral", "koral2", "ungu
 AQ_PUTIH = {"putih", "porselen", "mintpucat", "abu"}
 AQ = {"dalam": "#02714A", "merek": "#0FAE72", "muda": "#2FD99A", "es": "#DDF5EA",
       "putih": "#F4F8F6", "tinta": "#0B3B2C"}
+if AKSEN == "biru":
+    AQ = {"dalam": "#1646D6", "merek": "#2F7BFF", "muda": "#8CC6FF", "es": "#DDEBFF",
+          "putih": "#F4F7FC", "tinta": "#0D1B3E"}
 
 
 def _aqua(nama, warna):
@@ -825,7 +832,7 @@ def studio(lebar=512, tinggi=512):
         sep = nt.nodes.new("ShaderNodeSeparateXYZ")
         ramp = nt.nodes.new("ShaderNodeValToRGB")
         ramp.color_ramp.elements[0].position = 0.35
-        ramp.color_ramp.elements[0].color = hx("#B9E6D2")
+        ramp.color_ramp.elements[0].color = hx("#B9CFEE" if AKSEN == "biru" else "#B9E6D2")
         ramp.color_ramp.elements[1].position = 0.75
         ramp.color_ramp.elements[1].color = hx("#FFFFFF")
         nt.links.new(tc.outputs["Generated"], sep.inputs[0])
@@ -833,7 +840,7 @@ def studio(lebar=512, tinggi=512):
         nt.links.new(ramp.outputs["Color"], bg.inputs["Color"])
         bg.inputs["Strength"].default_value = 0.9
         lampu("kunci", (4.5, -5.0, 7.0), 900, 6.0, (1, 1, 1))
-        lampu("tepi", (-6.0, 5.0, 4.0), 700, 5.0, (0.82, 0.95, 0.9))
+        lampu("tepi", (-6.0, 5.0, 4.0), 700, 5.0, (0.81, 0.89, 1.0) if AKSEN == "biru" else (0.82, 0.95, 0.9))
         lampu("isi", (-5.0, -6.0, 1.5), 260, 7.0, (1, 1, 1))
         lampu("atas", (0.0, 0.0, 9.0), 300, 8.0, (1, 1, 1))
     else:
@@ -1062,7 +1069,7 @@ def render_ilustrasi(nama, fn, cam, sc):
 
 
 ANIM_FRAME = int(arg("--frame", 32))
-OUT_ANIM = os.path.join(ROOT, "build", "anim-ikon")
+OUT_ANIM = os.path.join(ROOT, "build", "anim-ikon" if AKSEN == "hijau" else "anim-ikon-" + AKSEN)
 
 
 def render_ikon_anim(nama, fn, cam, sc):

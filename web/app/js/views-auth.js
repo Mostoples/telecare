@@ -16,7 +16,7 @@
     <path d="M13 24.5h4.6l2.6-6.6 3.8 13 2.9-8.6 1.9 2.2H35" fill="none" stroke="#fff"
           stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
     <defs><linearGradient id="lg1" x1="2" y1="2" x2="46" y2="46">
-      <stop stop-color="#0FB56C"/><stop offset=".55" stop-color="#049A5B"/><stop offset="1" stop-color="#0E7FB8"/>
+      <stop style="stop-color:var(--g1)"/><stop offset="1" style="stop-color:var(--g3)"/>
     </linearGradient></defs></svg>`;
 
   /* ---------------- ONBOARDING ---------------- */

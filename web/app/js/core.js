@@ -53,20 +53,40 @@ window.TC = window.TC || {};
 
   /* Ikon 3D (render Blender, lihat blender/build_ikon3d.py). Dipakai untuk
      titik fokus visual; ikon garis SVG tetap dipakai di teks dan tombol. */
+  // Tema: 'biru' (bawaan) | 'hijau'. Aset 3D biru ada di assets/3d/biru/.
+  const tema = {
+    kini() { return document.documentElement.getAttribute('data-tema') === 'hijau' ? 'hijau' : 'biru'; },
+    pasang(t) {
+      t = t === 'hijau' ? 'hijau' : 'biru';
+      try { localStorage.setItem('tc.tema', t); } catch (e) {}
+      document.documentElement.setAttribute('data-tema', t);
+      const m = document.querySelector('meta[name="theme-color"]');
+      if (m) m.setAttribute('content', t === 'hijau' ? '#0B9A62' : '#2F7BFF');
+      // ganti sumber semua ikon/ilustrasi 3D yang sedang tampil
+      document.querySelectorAll('img.i3d, img.ilus3d').forEach((im) => {
+        im.src = im.src.replace(/assets\/3d\/(biru\/)?/, 'assets/3d/' + (t === 'biru' ? 'biru/' : ''));
+      });
+      window.dispatchEvent(new CustomEvent('tc:tema', { detail: t }));
+    },
+    warna(nama) {   // nilai token CSS, mis. warna('--g2') untuk canvas
+      return getComputedStyle(document.documentElement).getPropertyValue(nama).trim() || '#2F7BFF';
+    }
+  };
+  const aset3d = () => '../assets/3d/' + (tema.kini() === 'biru' ? 'biru/' : '');
   const ASET3D = '../assets/3d/';
   // Versi animasi (WebP loop, ikon-anim/) dipakai lebih dulu; bila belum ada,
   // jatuh ke render diam (ikon/).
   const i3d = (name, cls) =>
-    `<img class="i3d is-anim${cls ? ' ' + cls : ''}" src="${ASET3D}ikon-anim/${name}.webp" alt="" loading="lazy" decoding="async" draggable="false" onerror="this.onerror=null;this.classList.remove('is-anim');this.src='${ASET3D}ikon/${name}.webp'">`;
+    `<img class="i3d is-anim${cls ? ' ' + cls : ''}" src="${aset3d()}ikon-anim/${name}.webp" alt="" loading="lazy" decoding="async" draggable="false" onerror="this.onerror=null;this.classList.remove('is-anim');this.src='${aset3d()}ikon/${name}.webp'">`;
   // Ikon 3D diam (untuk dock tab & daftar panjang yang tak perlu animasi).
   const i3dDiam = (name, cls) =>
-    `<img class="i3d${cls ? ' ' + cls : ''}" src="${ASET3D}ikon/${name}.webp" alt="" decoding="async" draggable="false">`;
+    `<img class="i3d${cls ? ' ' + cls : ''}" src="${aset3d()}ikon/${name}.webp" alt="" decoding="async" draggable="false">`;
   // Pemetaan ikon garis sprite → ikon 3D Blender padanannya.
   const IKON3D = { home: 'rumah', chart: 'grafik', chat: 'chat', user: 'pengguna', users: 'pengguna',
     inbox: 'lonceng', cal: 'kalender', watch: 'jam', stetho: 'stetoskop', building: 'gedung',
     doc: 'grafik', bell: 'lonceng', target: 'tujuan', sync: 'gerigi', cam: 'makan' };
   const ilus3d = (name, cls) =>
-    `<img class="ilus3d${cls ? ' ' + cls : ''}" src="${ASET3D}ilustrasi/${name}.webp" alt="" decoding="async" draggable="false">`;
+    `<img class="ilus3d${cls ? ' ' + cls : ''}" src="${aset3d()}ilustrasi/${name}.webp" alt="" decoding="async" draggable="false">`;
 
   const rupiah = (n) => 'Rp' + Math.round(n).toLocaleString('id-ID');
 
@@ -597,7 +617,7 @@ window.TC = window.TC || {};
     const gid = 'g' + Math.random().toString(36).slice(2, 7);
     return `<svg viewBox="0 0 200 118" style="width:100%">
       <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="0">
-        <stop stop-color="#049A5B"/><stop offset=".55" stop-color="#E09B12"/><stop offset="1" stop-color="#E2543F"/>
+        <stop style="stop-color:var(--g2)"/><stop offset=".55" stop-color="#E09B12"/><stop offset="1" stop-color="#E2543F"/>
       </linearGradient></defs>
       <path d="M18 106a82 82 0 0 1 164 0" fill="none" stroke="#EDF3F0" stroke-width="16" stroke-linecap="round"/>
       <path d="M18 106a82 82 0 0 1 164 0" fill="none" stroke="url(#${gid})" stroke-width="16"
@@ -624,7 +644,7 @@ window.TC = window.TC || {};
 
   /* ---------------- 6. EKSPOR ---------------- */
   Object.assign(TC, {
-    $, $$, clamp, lerp, rnd, rint, pick, uid, secureId, esc, icon, i3d, i3dDiam, IKON3D, ilus3d, rupiah,
+    $, $$, clamp, lerp, rnd, rint, pick, uid, secureId, esc, icon, i3d, i3dDiam, IKON3D, ilus3d, tema, rupiah,
     pad2, hhmm, fullDate, shortDate, relTime, countdown, greeting, initials,
     DAYS, MONTHS,
     Store, Router,

@@ -281,7 +281,7 @@
     const peakCv = $('#peakChart');
     if (peakCv) {
       const data = TC.Meals.peakTrend(6);
-      TC.lineChart(peakCv, [{ data, color: '#049A5B', fill: true, dots: true }],
+      TC.lineChart(peakCv, [{ data, color: TC.tema.warna('--g2'), fill: true, dots: true }],
         { padL: 8, yLabels: false });
     }
 

@@ -313,6 +313,21 @@
       pastikan(await tunggu(() => win().TC.Store.state.settings.fastDemo === awal, 3000), 'tidak kembali');
     });
 
+    await uji('pengaturan: tema bawaan biru, bisa diganti hijau lalu kembali biru', async () => {
+      await keRute('#/profil/pengaturan');
+      const d = win().document.documentElement;
+      pastikan(d.getAttribute('data-tema') === 'biru', 'tema bawaan bukan biru: ' + d.getAttribute('data-tema'));
+      const hijau = await tunggu(() => el('.pilih-tema [data-tema="hijau"]'), 4000);
+      pastikan(hijau, 'tombol tema hijau tidak ada');
+      hijau.click();
+      pastikan(await tunggu(() => d.getAttribute('data-tema') === 'hijau', 2000), 'tema tidak berganti ke hijau');
+      pastikan(win().localStorage.getItem('tc.tema') === 'hijau', 'pilihan tema tidak tersimpan');
+      const aks = win().getComputedStyle(d).getPropertyValue('--g2').trim().toUpperCase();
+      pastikan(aks === '#0B9A62', 'token aksen hijau salah: ' + aks);
+      el('.pilih-tema [data-tema="biru"]').click();
+      pastikan(await tunggu(() => d.getAttribute('data-tema') === 'biru', 2000), 'tidak kembali ke biru');
+    });
+
     /* ---- 11. ganti peran lewat profil ---- */
     await uji('profil: ganti peran ke admin mendarat di /sistem', async () => {
       await keRute('#/profil');

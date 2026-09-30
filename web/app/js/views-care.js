@@ -345,8 +345,8 @@
     TC.topbar('Bergabung', { sub: 'Mengambil percakapan dari server' });
     setView(`<div class="empty" style="padding-top:60px">
       <svg viewBox="0 0 48 48" fill="none" style="width:52px;height:52px;margin:0 auto 14px">
-        <circle cx="24" cy="24" r="20" stroke="#D6F2E3" stroke-width="4"/>
-        <circle cx="24" cy="24" r="20" stroke="#049A5B" stroke-width="4" stroke-linecap="round"
+        <circle cx="24" cy="24" r="20" style="stroke:var(--gice)" stroke-width="4"/>
+        <circle cx="24" cy="24" r="20" style="stroke:var(--g2)" stroke-width="4" stroke-linecap="round"
                 stroke-dasharray="32 100">
           <animateTransform attributeName="transform" type="rotate"
             from="0 24 24" to="360 24 24" dur="1s" repeatCount="indefinite"/></circle></svg>

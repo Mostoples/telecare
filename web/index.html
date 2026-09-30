@@ -23,6 +23,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script>
+/* Tema sama dengan aplikasi (localStorage 'tc.tema'); bawaan biru. */
+(function () {
+  var t = 'biru';
+  try { t = localStorage.getItem('tc.tema') || 'biru'; } catch (e) {}
+  if (t !== 'hijau') t = 'biru';
+  document.documentElement.setAttribute('data-tema', t);
+  if (t === 'biru') document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('img[src*="assets/3d/"], video[poster*="assets/3d/"]').forEach(function (el) {
+      var a = el.tagName === 'VIDEO' ? 'poster' : 'src';
+      var v = el.getAttribute(a);
+      if (v.indexOf('assets/3d/biru/') < 0 && /assets\/3d\/(ikon|ikon-anim|ilustrasi)\//.test(v))
+        el.setAttribute(a, v.replace('assets/3d/', 'assets/3d/biru/'));
+    });
+  });
+})();
+</script>
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/fx.css">
 <link rel="stylesheet" href="css/neu.css">

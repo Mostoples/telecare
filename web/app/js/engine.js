@@ -272,13 +272,14 @@
           i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
         }
       };
-      path(); ctx.strokeStyle = 'rgba(4,154,91,.12)'; ctx.lineWidth = 6;
-      ctx.lineJoin = 'round'; ctx.stroke();
-      path(); ctx.strokeStyle = '#049A5B'; ctx.lineWidth = 1.8;
+      const aks = TC.tema ? TC.tema.warna('--g2') : '#2F7BFF';
+      path(); ctx.strokeStyle = aks; ctx.globalAlpha = 0.14; ctx.lineWidth = 6;
+      ctx.lineJoin = 'round'; ctx.stroke(); ctx.globalAlpha = 1;
+      path(); ctx.strokeStyle = aks; ctx.lineWidth = 1.8;
       ctx.lineCap = 'round'; ctx.stroke();
       ctx.beginPath();
       ctx.arc(W - 1.5, base - buf[n - 1] * amp, 3, 0, 7);
-      ctx.fillStyle = '#049A5B'; ctx.fill();
+      ctx.fillStyle = aks; ctx.fill();
     }
 
     let last = performance.now();

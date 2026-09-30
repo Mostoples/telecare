@@ -212,3 +212,14 @@ h2{font-weight:800;letter-spacing:-.025em}
   .vtabs{width:100%}
   .scroll-hint{display:none}
 }
+
+/* ---------- TEMA: bawaan biru, hijau lewat data-tema="hijau" ---------- */
+:root:not([data-tema="hijau"]){
+  --canvas:#E9EFF6; --canvas-2:#DFE6EF; --surface:#E9EFF6; --neu-d:#C6D2E3;
+  --grad:linear-gradient(135deg,#4B92FF,#1646D6);
+  --green-50:#EEF4FF; --green-100:#DDEBFF; --green-200:#B8D3FF; --green-300:#8CC6FF;
+  --green-400:#4B92FF; --green-500:#2F7BFF; --green-600:#1F63E0; --green-700:#1646D6;
+  --green-800:#12379F; --green-900:#0D1B3E; --green-950:#08122A;
+}
+:root:not([data-tema="hijau"]) .btn--primary{box-shadow:10px 12px 24px rgba(22,70,214,.3),-8px -8px 18px var(--neu-l),inset 0 1px 0 rgba(255,255,255,.35)}
+:root:not([data-tema="hijau"]) .hero__grid-overlay{background-image:radial-gradient(rgba(47,123,255,.14) 1px,transparent 1.4px)}
