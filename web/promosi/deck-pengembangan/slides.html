@@ -1,0 +1,340 @@
+<!-- 1 · SAMPUL -->
+<section class="s" aria-label="Sampul">
+  <div class="titik"></div>
+  <i class="bulat" style="width:1000px;height:1000px;right:-160px;top:40px;box-shadow:var(--in)"></i>
+  <i class="bulat" style="width:740px;height:740px;right:-30px;top:170px;box-shadow:var(--neo)"></i>
+  <video src="img/hero-loop.mp4" poster="img/produk.webp" autoplay muted loop playsinline
+    style="position:absolute;right:40px;top:200px;width:680px;height:680px;border-radius:50%;object-fit:cover;
+    -webkit-mask-image:radial-gradient(closest-side,#000 80%,transparent);mask-image:radial-gradient(closest-side,#000 80%,transparent)"></video>
+  <div class="isi">
+    <div class="logo"><svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="14" fill="#0B9A62"/><path d="M11 25h5.6l3-7.6 4.4 15 3.3-9.9 2.2 2.5H37" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>TeleCare<small>Health 5.0 Platform</small></div></div>
+    <div style="margin-top:140px">
+      <span class="eb">Presentasi pengembangan · 2026–2028</span>
+      <h1 style="max-width:12ch">Dari purwarupa ke layanan tervalidasi.</h1>
+      <p class="lead">Landasan ilmiah, rencana validasi klinis, dan jalur bisnis untuk platform telemedisin AIoT pencegah penyakit kronis.</p>
+    </div>
+  </div>
+  <div class="kaki"><span><b>Program Studi Fisika · FMIPA · Universitas Sebelas Maret</b></span><span>telecare-id.web.app</span></div>
+</section>
+
+<!-- 2 · RINGKASAN -->
+<section class="s" aria-label="Ringkasan eksekutif">
+  <div class="isi">
+    <span class="eb">Ringkasan</span>
+    <h2>Empat hal yang perlu diketahui.</h2>
+    <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:30px;margin-top:56px">
+      <div class="kartu" style="padding:34px 38px"><span class="tag sains">Masalah</span><h3 style="margin-top:16px">Hipertensi & stres terdeteksi terlambat</h3><p class="teks">Di Indonesia, 34,1% orang dewasa hipertensi menurut pengukuran, tetapi hanya 8,4% yang terdiagnosis. Institusi berpopulasi padat masih mengandalkan pemeriksaan berkala manual.</p></div>
+      <div class="kartu" style="padding:34px 38px"><span class="tag sains">Solusi</span><h3 style="margin-top:16px">Pemantauan kontinu + triase + teleconsult</h3><p class="teks">Wearable PPG/EKG, aplikasi empat peran, dan mesin triase yang meneruskan kasus berisiko ke dokter atau psikolog.</p></div>
+      <div class="kartu" style="padding:34px 38px"><span class="tag bisnis">Status</span><h3 style="margin-top:16px">Purwarupa berjalan (TRL 4)</h3><p class="teks">Firmware ESP32-C6 + MAX30102 berfungsi; aplikasi web live dengan 51 skenario uji otomatis lulus; chat & video call nyata.</p></div>
+      <div class="kartu" style="padding:34px 38px"><span class="tag bisnis">Kebutuhan</span><h3 style="margin-top:16px">Mitra pilot, validasi klinis, pendanaan</h3><p class="teks">Satu institusi pilot, dokter & psikolog mitra, persetujuan etik, dan dana untuk validasi terhadap alat acuan.</p></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Ringkasan</span><span>02</span></div>
+</section>
+
+<!-- 3 · MASALAH -->
+<section class="s" aria-label="Masalah">
+  <div class="isi">
+    <span class="eb sains">Latar epidemiologis</span>
+    <h2>Penyakit kronis tumbuh diam-diam.</h2>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr);margin-top:70px">
+      <div class="kartu" style="padding:40px"><div class="num">34,1<small>%</small></div><p class="teks" style="margin-top:20px">prevalensi hipertensi penduduk &gt;18 tahun berdasarkan pengukuran tekanan darah.</p><p class="sumber">Riskesdas 2018, Kemenkes RI</p></div>
+      <div class="kartu" style="padding:40px"><div class="num" style="color:var(--coral)">8,4<small>%</small></div><p class="teks" style="margin-top:20px">yang terdiagnosis tenaga kesehatan. Selisih inilah celah deteksi yang disasar.</p><p class="sumber">Riskesdas 2018, Kemenkes RI</p></div>
+      <div class="kartu" style="padding:40px"><div class="num">&gt;70<small>%</small></div><p class="teks" style="margin-top:20px">kematian di Indonesia disebabkan penyakit tidak menular, terutama kardiovaskular.</p><p class="sumber">WHO, profil PTM Indonesia</p></div>
+    </div>
+    <p class="lead" style="max-width:60ch;margin-top:56px">Stres kronis menaikkan tekanan darah dan mengganggu tidur, tetapi hampir tidak pernah tercatat dalam pemeriksaan rutin.</p>
+  </div>
+  <div class="kaki"><span>Sains · masalah</span><span>03</span></div>
+</section>
+
+<!-- 4 · HIPOTESIS -->
+<section class="s" aria-label="Pertanyaan riset">
+  <img src="img/analisis.webp" alt="" style="position:absolute;right:80px;top:170px;width:640px">
+  <div class="isi">
+    <span class="eb sains">Hipotesis & pertanyaan riset</span>
+    <h2 style="max-width:14ch">Kontinu mengalahkan berkala.</h2>
+    <div class="rumus" style="margin-top:44px;max-width:1000px">H₁ — Pemantauan PPG/HRV kontinu pada populasi institusi mendeteksi episode tekanan darah tinggi dan stres lebih awal daripada pemeriksaan berkala manual.</div>
+    <div style="display:grid;gap:18px;margin-top:34px;max-width:1000px">
+      <div class="baris"><b>RQ1</b><span>Seberapa akurat SpO₂ dan detak jantung dari PPG pergelangan dibanding alat acuan pada kondisi harian?</span></div>
+      <div class="baris"><b>RQ2</b><span>Apakah indeks stres berbasis HRV (RMSSD) berkorelasi dengan skala stres terstandar (mis. PSS-10)?</span></div>
+      <div class="baris"><b>RQ3</b><span>Setelah kalibrasi personal, berapa galat estimasi tekanan darah terhadap sfigmomanometer tervalidasi?</span></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Sains · hipotesis</span><span>04</span></div>
+</section>
+
+<!-- 5 · PRINSIP PENGUKURAN -->
+<section class="s" aria-label="Prinsip pengukuran">
+  <div class="isi">
+    <span class="eb sains">Prinsip fisika pengukuran</span>
+    <h2>Cahaya, jantung, dan pembuluh darah.</h2>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:30px;margin-top:56px">
+      <div class="kartu" style="padding:32px 32px"><img class="ikon" src="img/i-oksigen.webp" alt="" style="width:84px;height:84px"><h3 style="margin-top:12px">SpO₂ — rasio dua panjang gelombang</h3>
+        <div class="rumus kecil">R = (AC<sub>merah</sub>/DC<sub>merah</sub>) / (AC<sub>IR</sub>/DC<sub>IR</sub>)<br>SpO₂ ≈ a − b·R</div>
+        <p class="teks">Hukum Beer–Lambert: HbO₂ dan Hb menyerap merah (660 nm) dan inframerah (880 nm) berbeda. Koefisien a, b dikalibrasi empiris; ada koreksi bias situs pergelangan.</p></div>
+      <div class="kartu" style="padding:32px 32px"><img class="ikon" src="img/i-stres.webp" alt="" style="width:84px;height:84px"><h3 style="margin-top:12px">HRV — variabilitas antar-denyut</h3>
+        <div class="rumus kecil">RMSSD = √( 1/(N−1) · Σ (RR<sub>i+1</sub> − RR<sub>i</sub>)² )</div>
+        <p class="teks">Selang antar-puncak PPG/EKG. RMSSD mencerminkan tonus parasimpatis; penurunannya dipakai sebagai penanda beban stres.</p></div>
+      <div class="kartu" style="padding:32px 32px"><img class="ikon" src="img/i-tensi.webp" alt="" style="width:84px;height:84px"><h3 style="margin-top:12px">Tekanan darah — waktu tempuh nadi</h3>
+        <div class="rumus kecil">PWV = √(E·h / ρ·d) &nbsp;(Moens–Korteweg)<br>TD ≈ α · ln(PTT) + β</div>
+        <p class="teks">Makin kaku/tertekan arteri, makin cepat gelombang nadi. α, β dikalibrasi per pengguna terhadap manset acuan.</p></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Sains · pengukuran</span><span>05</span></div>
+</section>
+
+<!-- 6 · PERANGKAT KERAS -->
+<section class="s" aria-label="Perangkat keras">
+  <img src="img/f-sr-pergelangan.webp" alt="Render TeleBand di pergelangan" style="position:absolute;left:0;top:0;width:900px;height:1080px;object-fit:cover">
+  <div style="position:absolute;left:0;top:0;width:900px;height:1080px;background:linear-gradient(90deg,rgba(233,239,243,0) 55%,var(--bg))"></div>
+  <div class="isi" style="left:900px;padding-left:40px">
+    <span class="eb sains">Perangkat keras saat ini</span>
+    <h2>TeleBand purwarupa.</h2>
+    <div class="kartu" style="margin-top:40px;padding:8px 34px;width:840px">
+      <table class="tabel"><tbody>
+        <tr><td>Mikrokontroler</td><td>ESP32-C6 (Wi-Fi 6, BLE 5)</td></tr>
+        <tr><td>Layar</td><td>LCD sentuh 1,69″ (Waveshare)</td></tr>
+        <tr><td>Sensor optik</td><td>MAX30102 — merah + IR</td></tr>
+        <tr><td>Sampling PPG</td><td>100 Hz, FIFO 32 sampel</td></tr>
+        <tr><td>Keluaran tervalidasi internal</td><td>Detak jantung, SpO₂</td></tr>
+        <tr><td>Eksperimental</td><td>Tensi (kalibrasi), glukosa*</td></tr>
+        <tr><td>Konektivitas</td><td>BLE → aplikasi → cloud</td></tr>
+      </tbody></table>
+    </div>
+    <p class="teks" style="margin-top:22px;max-width:52ch">* Glukosa non-invasif dari PPG belum punya dasar fisiologis tervalidasi; diperlakukan sebagai riset, tidak ditampilkan sebagai angka klinis.</p>
+  </div>
+  <div class="kaki"><span>Sains · perangkat</span><span>06</span></div>
+</section>
+
+<!-- 7 · PIPELINE SINYAL -->
+<section class="s" aria-label="Pipeline sinyal">
+  <div class="isi">
+    <span class="eb sains">Pipeline sinyal & AI</span>
+    <h2>Dari foton ke keputusan klinis.</h2>
+    <div class="alur-h" style="margin-top:70px">
+      <div class="kartu"><em>01</em><b>Akuisisi</b><span>PPG 100 Hz · IMU · suhu</span></div>
+      <i></i>
+      <div class="kartu"><em>02</em><b>Pra-proses</b><span>Band-pass 0,5–4 Hz, buang artefak gerak (IMU)</span></div>
+      <i></i>
+      <div class="kartu"><em>03</em><b>Fitur</b><span>HR, RR interval, RMSSD, R, morfologi gelombang</span></div>
+      <i></i>
+      <div class="kartu"><em>04</em><b>Model</b><span>Indeks stres, anomali ritme, tren personal</span></div>
+      <i></i>
+      <div class="kartu"><em>05</em><b>Triase</b><span>Normal · Waspada · Kritis → eskalasi</span></div>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:26px;margin-top:60px">
+      <div class="cekung" style="padding:24px 30px"><b style="font-size:22px">Edge</b><p class="teks">Pra-proses di perangkat menekan derau dan bandwidth; tetap merekam saat luring.</p></div>
+      <div class="cekung" style="padding:24px 30px"><b style="font-size:22px">Aturan klinis dulu</b><p class="teks">Ambang bertingkat yang dapat diaudit dokter, sebelum model statistik.</p></div>
+      <div class="cekung" style="padding:24px 30px"><b style="font-size:22px">Baseline personal</b><p class="teks">Peringatan dihitung terhadap pola individu, bukan hanya ambang populasi.</p></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Sains · pipeline</span><span>07</span></div>
+</section>
+
+<!-- 8 · STATUS -->
+<section class="s" aria-label="Status pengembangan">
+  <div class="hp" style="position:absolute;left:1180px;top:110px;width:300px;transform:rotate(-4deg)"><img src="img/p-hr.webp" alt=""></div>
+  <div class="hp" style="position:absolute;left:1470px;top:70px;width:310px;z-index:2"><img src="img/p-home.webp" alt=""></div>
+  <div class="isi" style="right:760px">
+    <span class="eb bisnis">Status pengembangan</span>
+    <h2>Yang sudah berjalan.</h2>
+    <div style="display:grid;gap:16px;margin-top:40px">
+      <div class="baris"><b>✓</b><span>Firmware jam: ukur HR/SpO₂, simpan di flash, kirim lewat BLE</span></div>
+      <div class="baris"><b>✓</b><span>Aplikasi web (PWA) live: pasien, dokter, admin faskes, admin</span></div>
+      <div class="baris"><b>✓</b><span>Chat Firebase + video call WebRTC antarperangkat</span></div>
+      <div class="baris"><b>✓</b><span>Pembacaan GATT BLE (Heart Rate + 4 service), parser teruji</span></div>
+      <div class="baris"><b>✓</b><span>51 skenario uji end-to-end otomatis — semua lulus</span></div>
+      <div class="baris muted2"><b>○</b><span>Server TURN, push FCM, uji perangkat fisik di lapangan</span></div>
+    </div>
+    <div class="trl" style="margin-top:40px"><span>TRL</span><i class="on">1</i><i class="on">2</i><i class="on">3</i><i class="on kini">4</i><i>5</i><i>6</i><i>7</i><i>8</i><i>9</i></div>
+  </div>
+  <div class="kaki"><span>Bisnis · status</span><span>08</span></div>
+</section>
+
+<!-- 9 · VALIDASI KLINIS -->
+<section class="s" aria-label="Rencana validasi">
+  <div class="isi">
+    <span class="eb sains">Rencana validasi klinis</span>
+    <h2>Diuji terhadap alat acuan, sesuai standar.</h2>
+    <div class="kartu" style="margin-top:44px;padding:10px 40px">
+      <table class="tabel lebar"><thead><tr><th>Parameter</th><th>Acuan</th><th>Standar / kriteria</th><th>Analisis</th></tr></thead><tbody>
+        <tr><td>SpO₂</td><td>Oksimeter klinis</td><td>ISO 80601-2-61 · A<sub>rms</sub> ≤ 4%</td><td>Bland–Altman, A<sub>rms</sub></td></tr>
+        <tr><td>Detak jantung</td><td>EKG 12-lead</td><td>MAE ≤ 5 bpm (target internal)</td><td>MAE, korelasi Pearson</td></tr>
+        <tr><td>Tekanan darah</td><td>Sfigmomanometer tervalidasi</td><td>ISO 81060-2 · rerata ≤ 5 mmHg, SD ≤ 8 mmHg</td><td>Bland–Altman per subjek</td></tr>
+        <tr><td>Indeks stres</td><td>Kuesioner PSS-10</td><td>Korelasi bermakna (p &lt; 0,05)</td><td>Spearman, regresi campuran</td></tr>
+      </tbody></table>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:26px;margin-top:40px">
+      <div class="cekung" style="padding:22px 28px"><b style="font-size:22px">Desain</b><p class="teks">Studi komparatif prospektif di satu institusi pilot.</p></div>
+      <div class="cekung" style="padding:22px 28px"><b style="font-size:22px">Etik</b><p class="teks">Persetujuan KEPK dan informed consent tertulis sebelum pengambilan data.</p></div>
+      <div class="cekung" style="padding:22px 28px"><b style="font-size:22px">Sampel</b><p class="teks">Ditetapkan lewat perhitungan daya statistik; ISO 81060-2 mensyaratkan ≥ 85 subjek untuk tensi.</p></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Sains · validasi</span><span>09</span></div>
+</section>
+
+<!-- 10 · PETA JALAN -->
+<section class="s" aria-label="Peta jalan">
+  <div class="isi">
+    <span class="eb">Peta jalan 2026–2028</span>
+    <h2>Bertahap, dimulai dari stres.</h2>
+    <div class="garis-waktu" style="margin-top:80px">
+      <div class="kartu"><em>Fase 1 · 2026 Q4 – 2027 Q1</em><b>Pemantauan stres</b><span>HRV, detak istirahat, pola tidur; integrasi psikolog; pilot kecil.</span></div>
+      <div class="kartu"><em>Fase 2 · 2027 Q2 – Q3</em><b>Vital lengkap + validasi</b><span>SpO₂, suhu, EKG lead-I; uji terhadap alat acuan; eskalasi klinis.</span></div>
+      <div class="kartu"><em>Fase 3 · 2027 Q4 – 2028 Q1</em><b>Estimasi tekanan darah</b><span>Kalibrasi personal PTT/PPG; studi ISO 81060-2.</span></div>
+      <div class="kartu"><em>Fase 4 · 2028</em><b>Skala institusi</b><span>Multi-unit, analitik populasi, izin edar, integrasi SATUSEHAT.</span></div>
+    </div>
+    <div class="trl" style="margin-top:60px"><span>Target TRL</span><i class="on">4</i><i class="on">5</i><i class="on">6</i><i class="on kini">7</i></div>
+  </div>
+  <div class="kaki"><span>Pengembangan</span><span>10</span></div>
+</section>
+
+<!-- 11 · PASAR -->
+<section class="s" aria-label="Segmen pasar">
+  <div class="isi">
+    <span class="eb bisnis">Segmen pasar</span>
+    <h2>Pelanggan: institusi yang bertanggung jawab atas banyak orang.</h2>
+    <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:28px;margin-top:60px">
+      <div class="kartu" style="padding:32px 28px"><img class="ikon" src="img/i-gedung.webp" alt="" style="width:96px;height:96px"><h3 style="margin-top:14px">Perusahaan</h3><p class="teks">Program kesehatan karyawan, K3, beban kerja & absensi.</p><p class="sumber">pembeli: HR / K3</p></div>
+      <div class="kartu" style="padding:32px 28px"><img class="ikon" src="img/i-perisai.webp" alt="" style="width:96px;height:96px"><h3 style="margin-top:14px">Pesantren</h3><p class="teks">Asrama padat, deteksi demam & penurunan saturasi.</p><p class="sumber">pembeli: pengelola / yayasan</p></div>
+      <div class="kartu" style="padding:32px 28px"><img class="ikon" src="img/i-kalender.webp" alt="" style="width:96px;height:96px"><h3 style="margin-top:14px">Sekolah berasrama</h3><p class="teks">Stres ujian, kualitas tidur siswa.</p><p class="sumber">pembeli: sekolah / orang tua</p></div>
+      <div class="kartu" style="padding:32px 28px"><img class="ikon" src="img/i-dokter.webp" alt="" style="width:96px;height:96px"><h3 style="margin-top:14px">Panti wreda</h3><p class="teks">Lansia risiko kardiovaskular, alarm ke perawat.</p><p class="sumber">pembeli: pengelola panti</p></div>
+    </div>
+    <p class="lead" style="max-width:66ch;margin-top:48px">Pintu masuk B2B2C: institusi membeli layanan, anggotanya memakai perangkat dan aplikasi, dokter mitra menangani eskalasi.</p>
+  </div>
+  <div class="kaki"><span>Bisnis · pasar</span><span>11</span></div>
+</section>
+
+<!-- 12 · MODEL BISNIS -->
+<section class="s" aria-label="Model bisnis">
+  <img src="img/hub.webp" alt="" style="position:absolute;right:60px;top:190px;width:760px">
+  <div class="isi">
+    <span class="eb bisnis">Model bisnis</span>
+    <h2 style="max-width:13ch">Tiga aliran pendapatan.</h2>
+    <div style="display:grid;gap:20px;margin-top:48px;max-width:1000px">
+      <div class="kartu" style="padding:24px 32px;display:flex;gap:26px;align-items:center"><img class="ikon" src="img/i-jam.webp" alt="" style="width:80px;height:80px"><div><b style="font-size:26px">Perangkat sebagai layanan</b><p class="teks">Sewa TeleBand/TeleRing per anggota, termasuk penggantian & perawatan.</p></div></div>
+      <div class="kartu" style="padding:24px 32px;display:flex;gap:26px;align-items:center"><img class="ikon" src="img/i-grafik.webp" alt="" style="width:80px;height:80px"><div><b style="font-size:26px">Langganan platform (SaaS)</b><p class="teks">Per anggota per bulan: dasbor faskes, triase, laporan berkala.</p></div></div>
+      <div class="kartu" style="padding:24px 32px;display:flex;gap:26px;align-items:center"><img class="ikon" src="img/i-chat.webp" alt="" style="width:80px;height:80px"><div><b style="font-size:26px">Bagi hasil teleconsult</b><p class="teks">Porsi dari konsultasi dokter & psikolog mitra yang dipicu eskalasi.</p></div></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Bisnis · model</span><span>12</span></div>
+</section>
+
+<!-- 13 · UNIT ECONOMICS -->
+<section class="s" aria-label="Unit economics">
+  <div class="isi">
+    <span class="eb bisnis">Unit economics · asumsi awal</span>
+    <h2>Satu institusi pilot, 200 anggota.</h2>
+    <div class="grid" style="grid-template-columns:1.1fr .9fr;gap:40px;margin-top:44px;align-items:start">
+      <div class="kartu" style="padding:10px 38px">
+        <table class="tabel"><tbody>
+          <tr><td>Anggota terpantau</td><td>200</td></tr>
+          <tr><td>Harga langganan (asumsi)</td><td>Rp35.000 / anggota / bln</td></tr>
+          <tr><td>Sewa perangkat (asumsi)</td><td>Rp25.000 / anggota / bln</td></tr>
+          <tr><td>Pendapatan bulanan</td><td>Rp12.000.000</td></tr>
+          <tr><td>Biaya perangkat (BOM asumsi Rp450rb, 24 bln)</td><td>Rp3.750.000 / bln</td></tr>
+          <tr><td>Cloud, dukungan, kalibrasi (asumsi)</td><td>Rp3.000.000 / bln</td></tr>
+          <tr><td><b>Margin kontribusi</b></td><td><b>± Rp5,25 jt/bln · 44%</b></td></tr>
+        </tbody></table>
+      </div>
+      <div style="display:grid;gap:20px">
+        <div class="cekung" style="padding:24px 30px"><b style="font-size:22px">Belum termasuk</b><p class="teks">Bagi hasil teleconsult, biaya akuisisi pelanggan, dan biaya sertifikasi alat kesehatan.</p></div>
+        <div class="cekung" style="padding:24px 30px"><b style="font-size:22px">Divalidasi saat pilot</b><p class="teks">Kesediaan membayar institusi, tingkat pemakaian harian, dan umur pakai perangkat.</p></div>
+        <div class="peringatan">Semua angka di slide ini adalah <b>asumsi perencanaan</b>, bukan data pasar atau hasil penjualan.</div>
+      </div>
+    </div>
+  </div>
+  <div class="kaki"><span>Bisnis · unit economics</span><span>13</span></div>
+</section>
+
+<!-- 14 · DIFERENSIASI -->
+<section class="s" aria-label="Diferensiasi">
+  <div class="isi">
+    <span class="eb bisnis">Posisi & diferensiasi</span>
+    <h2>Di antara smartwatch dan klinik.</h2>
+    <div class="kartu" style="margin-top:44px;padding:10px 40px">
+      <table class="tabel lebar matriks"><thead><tr><th></th><th>Pemeriksaan berkala manual</th><th>Smartwatch konsumen</th><th>Telemedisin umum</th><th class="kita">TeleCare</th></tr></thead><tbody>
+        <tr><td>Data kontinu</td><td>—</td><td>✓</td><td>—</td><td class="kita">✓</td></tr>
+        <tr><td>Dasbor populasi institusi</td><td>sebagian</td><td>—</td><td>—</td><td class="kita">✓</td></tr>
+        <tr><td>Triase & eskalasi ke dokter</td><td>manual</td><td>—</td><td>atas inisiatif pasien</td><td class="kita">otomatis</td></tr>
+        <tr><td>Vital terlampir saat konsultasi</td><td>—</td><td>—</td><td>jarang</td><td class="kita">✓</td></tr>
+        <tr><td>Kalibrasi terhadap alat acuan</td><td>✓</td><td>bervariasi</td><td>—</td><td class="kita">direncanakan</td></tr>
+      </tbody></table>
+    </div>
+    <p class="lead" style="max-width:66ch;margin-top:40px">Keunggulan TeleCare ada pada alur tertutup: pengukuran, triase, tindak lanjut klinis, dan evaluasi dalam satu platform untuk satu institusi.</p>
+  </div>
+  <div class="kaki"><span>Bisnis · diferensiasi</span><span>14</span></div>
+</section>
+
+<!-- 15 · REGULASI -->
+<section class="s" aria-label="Regulasi dan etika">
+  <img src="img/aman.webp" alt="" style="position:absolute;right:80px;top:200px;width:640px">
+  <div class="isi">
+    <span class="eb">Regulasi, privasi & etika</span>
+    <h2 style="max-width:13ch">Aman sebelum besar.</h2>
+    <div style="display:grid;gap:18px;margin-top:44px;max-width:1040px">
+      <div class="baris"><b>PDP</b><span>UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi — data kesehatan termasuk data spesifik.</span></div>
+      <div class="baris"><b>Alkes</b><span>Izin edar alat kesehatan dalam negeri (AKD) dari Kemenkes sebelum klaim diagnostik.</span></div>
+      <div class="baris"><b>Interop</b><span>Rencana integrasi SATUSEHAT (Kemenkes) untuk pertukaran rekam kesehatan.</span></div>
+      <div class="baris"><b>Etik</b><span>Persetujuan KEPK, informed consent, data dipisah per unit dan diakses per peran.</span></div>
+      <div class="baris"><b>Klaim</b><span>Sampai tervalidasi, aplikasi menandai angka sebagai estimasi, bukan hasil pemeriksaan medis.</span></div>
+    </div>
+  </div>
+  <div class="kaki"><span>Regulasi</span><span>15</span></div>
+</section>
+
+<!-- 16 · RISIKO -->
+<section class="s" aria-label="Risiko">
+  <div class="isi">
+    <span class="eb">Risiko & mitigasi</span>
+    <h2>Yang bisa salah, dan rencananya.</h2>
+    <div class="kartu" style="margin-top:44px;padding:10px 40px">
+      <table class="tabel lebar"><thead><tr><th>Risiko</th><th>Dampak</th><th>Mitigasi</th></tr></thead><tbody>
+        <tr><td>Akurasi PPG turun karena gerak & warna kulit</td><td>tinggi</td><td>Kompensasi IMU, kalibrasi personal, validasi lintas kelompok</td></tr>
+        <tr><td>Estimasi tensi tidak memenuhi ISO 81060-2</td><td>tinggi</td><td>Tetap sebagai "tren", bukan angka klinis; tensimeter terhubung sebagai acuan</td></tr>
+        <tr><td>Kepatuhan pemakaian rendah</td><td>sedang</td><td>TeleRing untuk malam hari, baterai multi-hari, pengingat</td></tr>
+        <tr><td>Beban eskalasi ke dokter</td><td>sedang</td><td>Triase bertingkat, ambang dapat disetel per unit</td></tr>
+        <tr><td>Perizinan memakan waktu</td><td>sedang</td><td>Mulai sebagai layanan wellness; jalur AKD paralel dengan validasi</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+  <div class="kaki"><span>Risiko</span><span>16</span></div>
+</section>
+
+<!-- 17 · TIM & KEBUTUHAN -->
+<section class="s" aria-label="Tim dan kebutuhan">
+  <div class="isi">
+    <span class="eb bisnis">Tim & kebutuhan</span>
+    <h2>Yang kami cari.</h2>
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:40px;margin-top:50px;align-items:start">
+      <div class="kartu" style="padding:34px 40px">
+        <h3>Tim</h3>
+        <p class="teks" style="margin-top:14px;font-size:24px;line-height:1.7"><b>Fajar Jelang Riyadi</b> — ketua<br><b>Faizal Tri Widiandika</b> — anggota<br><b>Sholeh Putra Utama</b> — anggota<br>Pembimbing: <b>Dr. Fuad Anwar, S.Si., M.Si.</b><br><span class="muted">Fisika · FMIPA · Universitas Sebelas Maret</span></p>
+      </div>
+      <div style="display:grid;gap:18px">
+        <div class="baris"><b>01</b><span><b>Institusi pilot</b> — satu unit (±200 anggota) untuk Fase 1–2</span></div>
+        <div class="baris"><b>02</b><span><b>Mitra klinis</b> — dokter & psikolog untuk eskalasi dan studi validasi</span></div>
+        <div class="baris"><b>03</b><span><b>Pendanaan riset</b> — alat acuan, perangkat pilot, biaya etik & uji</span></div>
+        <div class="baris"><b>04</b><span><b>Mitra manufaktur</b> — casing, strap, produksi batch kecil</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="kaki"><span>Kebutuhan</span><span>17</span></div>
+</section>
+
+<!-- 18 · PENUTUP -->
+<section class="s" aria-label="Penutup">
+  <div class="titik"></div>
+  <img src="img/konsultasi.webp" alt="" style="position:absolute;right:40px;top:150px;width:720px">
+  <div class="isi">
+    <span class="eb">Coba purwarupanya</span>
+    <h1 style="font-size:96px;max-width:11ch">Rawat lebih awal, bukan lebih lambat.</h1>
+    <div style="display:flex;gap:36px;align-items:center;margin-top:60px">
+      <div class="cekung" style="width:200px;height:200px;padding:22px;background:#fff"><img src="img/qr.svg" alt="QR menuju aplikasi TeleCare" style="width:100%;height:100%"></div>
+      <div><p style="font:500 30px var(--mono);color:var(--g)">telecare-id.web.app</p>
+        <p class="teks" style="margin-top:14px;font-size:22px;max-width:26ch">Masuk sebagai tamu — pilih peran pasien, dokter, atau admin faskes.</p></div>
+    </div>
+  </div>
+  <div class="kaki"><span><b>TeleCare</b> · Fisika FMIPA UNS</span><span>18</span></div>
+</section>

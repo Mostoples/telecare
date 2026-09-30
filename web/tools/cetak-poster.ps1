@@ -4,6 +4,7 @@
     promosi/telecare-poster.png   3174 x 4490 px (2x), untuk media sosial/pratinjau
     promosi/telecare-poster.webp  1587 x 2245 px, untuk web
     promosi/telecare-deck.pdf     deck 13 slide 16:9 (promosi/deck/)
+    promosi/telecare-deck-pengembangan.pdf   deck 18 slide pengembangan (bisnis + sains)
 
   Prasyarat: server lokal hidup (python tools/serve.py 8950).
     powershell -NoProfile -ExecutionPolicy Bypass -File tools\cetak-poster.ps1
@@ -43,7 +44,12 @@ $deckPdf = Join-Path $akar 'promosi\telecare-deck.pdf'
 Remove-Item $deckPdf -Force -ErrorAction SilentlyContinue
 Jalankan-Sekali @('--no-pdf-header-footer', '--virtual-time-budget=8000', "--print-to-pdf=$deckPdf") 'deck-pdf'
 
-foreach ($f in @($pdf, $png, $deckPdf)) {
+$url = "$Basis/promosi/deck-pengembangan/"
+$devPdf = Join-Path $akar 'promosi\telecare-deck-pengembangan.pdf'
+Remove-Item $devPdf -Force -ErrorAction SilentlyContinue
+Jalankan-Sekali @('--no-pdf-header-footer', '--virtual-time-budget=8000', "--print-to-pdf=$devPdf") 'dev-pdf'
+
+foreach ($f in @($pdf, $png, $deckPdf, $devPdf)) {
   $n = if (Test-Path $f) { (Get-Item $f).Length } else { 0 }
   Write-Host ('{0,-24} {1,10:N0} bytes' -f (Split-Path $f -Leaf), $n)
 }
